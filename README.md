@@ -107,3 +107,10 @@ Copy-paste this into a `README.md` to onboard collaborators, partners, or judges
 5. **Roadmap**: Scalability beyond SF.  
 
 Ideal for climate hackathon submissions or GitHub/GitLab repos! 🌍✨
+
+Running the backend
+
+```
+cd backend
+pip install requirements.txt
+```

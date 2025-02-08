@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # Python
 __pycache__/
 *.py[cod]
@@ -213,3 +214,7 @@ cython_debug/
 
 .env
 .secrets
+=======
+.now*
+backend/node_modules
+>>>>>>> 53b5975074a48b42b01b06b09b2b41082c76acd6
