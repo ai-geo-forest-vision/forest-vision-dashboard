@@ -60,23 +60,41 @@ def load_rectangles_from_json() -> List[Rectangle]:
     Returns:
         List of Rectangle objects converted from the JSON data.
     """
-    dataset_path = Path("./datasets/parking-lot-coordinates.json")
-    print(f"Loading data from {dataset_path.absolute()}")
-    with open(dataset_path, "r") as f:
+    parking_lots_path = Path("./datasets/parking-lot-coordinates.json")
+    print(f"Loading data from {parking_lots_path.absolute()}")
+    with open(parking_lots_path, "r") as f:
         data = json.load(f)
-    print(f"Loaded {len(data)} rectangles from JSON")
+    print(f"Loaded parking lot {len(data)} rectangles from JSON")
 
-    # Convert JSON objects to Rectangle models
     rectangles = [
         Rectangle(
             top_right_lat=item["latitude"],
             top_right_long=item["longitude"],
             width_meters=item["width"],
             length_meters=item["length"],
-            area_type=AreaType.PARKING_LOT,  # Always parking lots for now
+            area_type=AreaType.PARKING_LOT,  
         )
         for item in data
     ]
+
+    street_side_path = Path("./datasets/coordinates-small.json")
+    print(f"Loading data from {street_side_path.absolute()}")
+    with open(street_side_path, "r") as f:
+        street_side_data = json.load(f)
+    print(f"Loaded street side {len(street_side_data)} rectangles from JSON")
+    # Merge datasets
+    data.extend(street_side_data)
+    # Convert JSON objects to Rectangle models
+    rectangles.extend([
+        Rectangle(
+            top_right_lat=item["latitude"],
+            top_right_long=item["longitude"],
+            width_meters=item["width"],
+            length_meters=item["length"],
+            area_type=AreaType.STREET_SIDE,
+        )
+        for item in data
+    ])
     return rectangles
 
 
