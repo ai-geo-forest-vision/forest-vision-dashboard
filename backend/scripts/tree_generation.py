@@ -15,7 +15,7 @@ class Rectangle(BaseModel):
     top_right_lat: float
     top_right_long: float
     width_meters: float  # Width in meters
-    height_meters: float  # Height in meters
+    length_meters: float  # Length in meters
 
 
 class TreeLocation(BaseModel):
@@ -52,18 +52,18 @@ def _generate_tree_locations(rectangle: Rectangle) -> List[TreeLocation]:
     )
 
     # Calculate number of trees based on area and density
-    area = rectangle.width_meters * rectangle.height_meters
+    area = rectangle.width_meters * rectangle.length_meters
     num_trees = int(area * TREES_PER_SQUARE_METER)
 
     # Generate random positions within the rectangle
     random_widths = np.random.uniform(0, rectangle.width_meters, num_trees)
-    random_heights = np.random.uniform(0, rectangle.height_meters, num_trees)
+    random_lengths = np.random.uniform(0, rectangle.length_meters, num_trees)
 
     # Convert to lat/long coordinates
     tree_locations = []
-    for w, h in zip(random_widths, random_heights):
+    for w, l in zip(random_widths, random_lengths):
         # Convert meters to lat/long differences
-        lat_diff = h * meters_to_lat
+        lat_diff = l * meters_to_lat
         long_diff = w * meters_to_long
 
         # Calculate final coordinates (note: subtract from top_right_lat since we're going south)

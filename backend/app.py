@@ -30,7 +30,7 @@ def load_rectangles_from_json() -> List[Rectangle]:
             top_right_lat=item["latitude"],
             top_right_long=item["longitude"],
             width_meters=item["width"],
-            height_meters=item["height"],
+            length_meters=item["length"],
         )
         for item in data
     ]
