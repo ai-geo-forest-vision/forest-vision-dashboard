@@ -3,7 +3,7 @@ import random
 from pathlib import Path
 from typing import Dict, List
 
-from fastapi import FastAPI
+from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from scripts.tree_generation import (AreaType, Rectangle, Tree,
@@ -141,7 +141,7 @@ def load_rectangles_from_json() -> List[Rectangle]:
 
 
 @app.get("/trees/", response_model=List[Tree])
-async def get_trees(params: TreeQueryParams = TreeQueryParams()) -> List[Tree]:
+async def get_trees(params: TreeQueryParams = Depends()) -> List[Tree]:
     """
     Get tree locations based on predefined parking lot data.
 
