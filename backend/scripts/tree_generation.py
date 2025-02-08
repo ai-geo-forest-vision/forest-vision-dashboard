@@ -84,10 +84,6 @@ def _generate_tree_locations(
     # Use round instead of int to avoid truncation bias
     num_trees = max(1, round(area * trees_per_square_meter))
 
-    print(
-        f"Generating {num_trees} trees for {area}m² {rectangle.area_type} area with density {trees_per_square_meter}"
-    )
-
     # Generate random positions within the rectangle
     random_widths = np.random.uniform(0, rectangle.width_meters, num_trees)
     random_lengths = np.random.uniform(0, rectangle.length_meters, num_trees)
