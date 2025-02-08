@@ -14,11 +14,12 @@ TREES_PER_SQUARE_METER = 0.01  # Adjust this value based on desired density
 class TreeType(str, Enum):
     """Types of trees that can be planted"""
 
-    OAK = "oak"
-    MAPLE = "maple"
-    PINE = "pine"
-    BIRCH = "birch"
-    WILLOW = "willow"
+    OAK = "coast_live_oak"
+    PINE = "monterey_pine"
+    REDWOOD = "redwood"
+    BUCKEYE = "california_buckeye"
+    SYCAMORE = "western_sycamore"
+    PLANE = "london_plane"
 
 
 class AreaType(str, Enum):
