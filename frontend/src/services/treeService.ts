@@ -7,15 +7,23 @@ export interface TreeLocation {
 }
 
 export const fetchTrees = async (
-  coverage: number = 100,
+  percentage: number = 1.0, // 0.0 to 1.0 decimal
   treeDensity: number = 0.01 // trees per square meter
 ): Promise<Feature<Point, TreeProperties>[]> => {
   try {
-    // Convert coverage from percentage (0-100) to decimal (0-1)
-    const percentage = coverage / 100;
+    // Debug the actual values being sent
+    console.log('Sending request with:', {
+      percentage,
+      trees_per_square_meter: treeDensity
+    });
     
-    // treeDensity is already in trees per square meter, which is what the backend expects
-    const response = await fetch(`/api/trees/?percentage=${percentage}&trees_per_square_meter=${treeDensity}`);
+    // Make sure to encode the parameters properly
+    const params = new URLSearchParams({
+      percentage: percentage.toString(),
+      trees_per_square_meter: treeDensity.toString()
+    });
+    
+    const response = await fetch(`/api/trees/?${params}`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }

@@ -106,15 +106,15 @@ export const ControlPanel = ({
         <Slider
           value={treeDensity}
           onChange={(_, newValue) => onTreeDensityChange(newValue as number)}
-          min={0.001}
-          max={0.02}
-          step={0.001}
+          min={0}
+          max={1.0}
+          step={0.05}
           valueLabelDisplay="auto"
           valueLabelFormat={formatDensity}
           marks={[
-            { value: 0.001, label: '0.001' },
-            { value: 0.01, label: '0.01' },
-            { value: 0.02, label: '0.02' }
+            { value: 0, label: '0' },
+            { value: 0.5, label: '0.5' },
+            { value: 1.0, label: '1.0' }
           ]}
         />
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1, color: 'rgba(255, 255, 255, 0.7)' }}>

@@ -17,7 +17,7 @@ const theme = createTheme({
 
 function App() {
   const [selectedParkingType, setSelectedParkingType] = useState<string>('all');
-  const [treeDensity, setTreeDensity] = useState<number>(0.01); // Default 0.01 trees per square meter
+  const [treeDensity, setTreeDensity] = useState<number>(0); // Start with no trees
 
   return (
     <ThemeProvider theme={theme}>

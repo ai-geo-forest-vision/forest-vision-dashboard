@@ -91,7 +91,7 @@ export const MapView = ({ parkingType, treeDensity }: MapViewProps) => {
     const loadTrees = async () => {
       setIsLoading(true);
       try {
-        const treeData = await fetchTrees(100, treeDensity); // Always use 100% coverage
+        const treeData = await fetchTrees(1.0, treeDensity); // Use 1.0 for 100% coverage
         console.log('Loaded trees:', treeData.length);
         setTrees(treeData);
         setTreeCount(treeData.length);
@@ -103,7 +103,7 @@ export const MapView = ({ parkingType, treeDensity }: MapViewProps) => {
     };
 
     loadTrees();
-  }, [parkingType, treeDensity]); // Remove coverage from dependencies
+  }, [parkingType, treeDensity]); // Dependencies include parkingType and treeDensity
 
   const onHover = (info: PickingInfo) => {
     setHoveredFeature(info.object as Feature<Point, TreeProperties> | null);
