@@ -1,14 +1,15 @@
 import json
 import random
 from pathlib import Path
-from typing import List, Dict
+from typing import Dict, List
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from scripts.tree_generation import (AreaType, Rectangle, Tree,
                                      generate_trees_for_rectangles)
-from services.getAsphaultConversionResults import plan_asphalt_conversion, species_data_california
+from services.getAsphaultConversionResults import (plan_asphalt_conversion,
+                                                   species_data_california)
 
 
 class TreeQueryParams(BaseModel):
@@ -40,24 +41,21 @@ class TreeQueryParams(BaseModel):
 
 class AsphaltConversionParams(BaseModel):
     """Parameters for asphalt conversion planning"""
-    asphalt_sqft: float = Field(gt=0.0, description="Total square feet of asphalt to remove")
+
+    asphalt_sqft: float = Field(
+        gt=0.0, description="Total square feet of asphalt to remove"
+    )
     species_distribution: Dict[str, float] = Field(
         description="Distribution of tree species as {species_name: fraction}, must sum to 1.0"
     )
     spacing_sqft_per_tree: float = Field(
-        default=100.0,
-        gt=0.0,
-        description="Square feet allocated per tree"
+        default=100.0, gt=0.0, description="Square feet allocated per tree"
     )
     cost_removal_per_sqft: float = Field(
-        default=10.0,
-        gt=0.0,
-        description="Cost to remove asphalt per square foot"
+        default=10.0, gt=0.0, description="Cost to remove asphalt per square foot"
     )
     maintenance_years: int = Field(
-        default=5,
-        gt=0,
-        description="Number of years of maintenance to account for"
+        default=5, gt=0, description="Number of years of maintenance to account for"
     )
 
     model_config = {
@@ -68,11 +66,11 @@ class AsphaltConversionParams(BaseModel):
                     "species_distribution": {
                         "coast_live_oak": 0.5,
                         "monterey_pine": 0.3,
-                        "redwood": 0.2
+                        "redwood": 0.2,
                     },
                     "spacing_sqft_per_tree": 100.0,
                     "cost_removal_per_sqft": 10.0,
-                    "maintenance_years": 5
+                    "maintenance_years": 5,
                 }
             ]
         }
@@ -114,7 +112,7 @@ def load_rectangles_from_json() -> List[Rectangle]:
             top_right_long=item["longitude"],
             width_meters=item["width"],
             length_meters=item["length"],
-            area_type=AreaType.PARKING_LOT,  
+            area_type=AreaType.PARKING_LOT,
         )
         for item in data
     ]
@@ -127,16 +125,18 @@ def load_rectangles_from_json() -> List[Rectangle]:
     # Merge datasets
     data.extend(street_side_data)
     # Convert JSON objects to Rectangle models
-    rectangles.extend([
-        Rectangle(
-            top_right_lat=item["latitude"],
-            top_right_long=item["longitude"],
-            width_meters=item["width"],
-            length_meters=item["length"],
-            area_type=AreaType.STREET_SIDE,
-        )
-        for item in data
-    ])
+    rectangles.extend(
+        [
+            Rectangle(
+                top_right_lat=item["latitude"],
+                top_right_long=item["longitude"],
+                width_meters=item["width"],
+                length_meters=item["length"],
+                area_type=AreaType.STREET_SIDE,
+            )
+            for item in data
+        ]
+    )
     return rectangles
 
 
@@ -183,7 +183,7 @@ async def calculate_asphalt_conversion(params: AsphaltConversionParams):
         species_data=species_data_california,
         spacing_sqft_per_tree=params.spacing_sqft_per_tree,
         cost_removal_per_sqft=params.cost_removal_per_sqft,
-        maintenance_years=params.maintenance_years
+        maintenance_years=params.maintenance_years,
     )
 
 

@@ -83,8 +83,10 @@ def _generate_tree_locations(
     area = rectangle.width_meters * rectangle.length_meters
     # Use round instead of int to avoid truncation bias
     num_trees = max(1, round(area * trees_per_square_meter))
-    
-    print(f"Generating {num_trees} trees for {area}m² {rectangle.area_type} area with density {trees_per_square_meter}")
+
+    print(
+        f"Generating {num_trees} trees for {area}m² {rectangle.area_type} area with density {trees_per_square_meter}"
+    )
 
     # Generate random positions within the rectangle
     random_widths = np.random.uniform(0, rectangle.width_meters, num_trees)
@@ -112,7 +114,7 @@ def _generate_tree_locations(
 
 
 def generate_trees_for_rectangles(
-    rectangles: List[Rectangle], trees_per_square_meter: float = 1.0
+    rectangles: List[Rectangle], trees_per_square_meter
 ) -> List[Tree]:
     """
     Generate tree locations for multiple rectangles
@@ -125,11 +127,10 @@ def generate_trees_for_rectangles(
     total_area = sum(rect.width_meters * rect.length_meters for rect in rectangles)
     expected_trees = round(total_area * trees_per_square_meter)
     print(f"Total area: {total_area}m², Expected trees: {expected_trees}")
-    
     all_trees = []
     for rectangle in rectangles:
         trees = _generate_tree_locations(rectangle, trees_per_square_meter)
         all_trees.extend(trees)
-    
+
     print(f"Actually generated {len(all_trees)} trees\n")
     return all_trees
