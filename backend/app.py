@@ -53,7 +53,7 @@ def load_rectangles_from_json() -> List[Rectangle]:
     Returns:
         List of Rectangle objects converted from the JSON data.
     """
-    dataset_path = Path("./datasets/coordinates-small.json")
+    dataset_path = Path("./datasets/parking-lot-coordinates.json")
     print(f"Loading data from {dataset_path.absolute()}")
     with open(dataset_path, "r") as f:
         data = json.load(f)
