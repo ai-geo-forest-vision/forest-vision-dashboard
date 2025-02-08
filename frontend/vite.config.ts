@@ -7,8 +7,7 @@ export default defineConfig(({ mode }) => {
   
   return {
     define: {
-      'import.meta.env.VITE_MAPBOX_TOKEN': JSON.stringify(env.VITE_MAPBOX_TOKEN),
-      'import.meta.env.VITE_BACKEND_URL': JSON.stringify(env.VITE_BACKEND_URL)
+      'process.env.VITE_MAPBOX_TOKEN': JSON.stringify(env.VITE_MAPBOX_TOKEN),
     },
     plugins: [react()],
     server: {

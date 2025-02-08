@@ -1,4 +1,5 @@
 import { MapView } from './components/Map/Map';
+import { ControlPanel } from './components/ControlPanel';
 import { Box, CssBaseline, ThemeProvider, createTheme } from '@mui/material';
 
 const theme = createTheme({
@@ -32,6 +33,7 @@ function App() {
           }}
         >
           <MapView />
+          <ControlPanel />
         </Box>
       </Box>
     </ThemeProvider>

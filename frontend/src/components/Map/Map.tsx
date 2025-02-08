@@ -1,103 +1,121 @@
-import { useCallback, useState, useMemo, useRef, useEffect } from 'react';
+import { useRef, useEffect, useMemo, useState } from 'react';
 import DeckGL from '@deck.gl/react';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Map as MapGL } from 'react-map-gl';
-import { ViewState, ForestData } from '../../types';
-import { ScatterplotLayer } from '@deck.gl/layers';
-import { HexagonLayer } from '@deck.gl/aggregation-layers';
+import type { MapRef } from 'react-map-gl';
+import type { PickingInfo, Deck } from '@deck.gl/core';
+import type { Feature, Point } from 'geojson';
+import { mockTreeData, TreeProperties } from '../../services/mockData';
+import { createLayers } from './layers';
 
-// Mapbox token from environment variables
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
+interface ViewState {
+  longitude: number;
+  latitude: number;
+  zoom: number;
+  pitch: number;
+  bearing: number;
+}
+
 const INITIAL_VIEW_STATE: ViewState = {
-  longitude: -122.4,
-  latitude: 37.8,
-  zoom: 11,
-  pitch: 30,
+  longitude: -122.4194,
+  latitude: 37.7749,
+  zoom: 14,
+  pitch: 0,
   bearing: 0
 };
 
-// Mock data - replace with actual API calls
-const MOCK_FOREST_DATA: ForestData[] = [
-  {
-    id: '1',
-    coordinates: [-122.4, 37.8],
-    properties: {
-      name: 'Forest Area 1',
-      area: 1000,
-      treeCount: 500,
-      healthScore: 0.8
-    }
-  }
-];
-
 export const MapView = () => {
-  const deckRef = useRef<any>(null);
+  const mapRef = useRef<MapRef>(null);
+  const deckRef = useRef<Deck>(null);
   const [viewState, setViewState] = useState<ViewState>(INITIAL_VIEW_STATE);
+  const [hoveredFeature, setHoveredFeature] = useState<Feature<Point, TreeProperties> | null>(null);
 
-  const onViewStateChange = useCallback(
-    ({ viewState: newViewState }: any) => {
-      setViewState(newViewState);
-    },
-    []
-  );
+  const onHover = (info: PickingInfo) => {
+    setHoveredFeature(info.object as Feature<Point, TreeProperties> | null);
+  };
 
-  // Memoize layers to prevent unnecessary recreation
-  const layers = useMemo(() => [
-    new ScatterplotLayer({
-      id: 'forest-points',
-      data: MOCK_FOREST_DATA,
-      getPosition: (d: ForestData) => d.coordinates,
-      getFillColor: (d: ForestData) => [0, 255 * d.properties.healthScore, 0],
-      getRadius: (d: ForestData) => Math.sqrt(d.properties.area),
-      pickable: true,
-      opacity: 0.8,
-      stroked: true,
-      filled: true,
-      radiusScale: 6,
-      radiusMinPixels: 3,
-      radiusMaxPixels: 30,
-    }),
-    new HexagonLayer({
-      id: 'hexagon-layer',
-      data: MOCK_FOREST_DATA,
-      getPosition: (d: ForestData) => d.coordinates,
-      radius: 1000,
-      elevationScale: 100,
-      extruded: true,
-      pickable: true,
-    })
-  ], []);
+  const layers = useMemo(() => createLayers(mockTreeData.features, onHover), []);
+
+  // Update cursor style based on hover state
+  useEffect(() => {
+    const canvas = mapRef.current?.getMap()?.getCanvas();
+    if (canvas) {
+      canvas.style.cursor = hoveredFeature ? 'pointer' : 'grab';
+    }
+  }, [hoveredFeature]);
 
   // Cleanup WebGL context on unmount
   useEffect(() => {
     return () => {
       if (deckRef.current) {
-        // @ts-ignore - _deck exists on the DeckGL instance
-        const deck = deckRef.current._deck;
-        if (deck) {
-          deck.finalize();
+        // @ts-ignore - finalize exists but is not in types
+        deckRef.current.finalize();
+        deckRef.current = null;
+      }
+      if (mapRef.current) {
+        const map = mapRef.current.getMap();
+        if (map) {
+          map.remove();
         }
       }
     };
   }, []);
 
   return (
-    <div style={{ position: 'relative', width: '100%', height: '100%' }}>
-      <DeckGL
-        ref={deckRef}
-        viewState={viewState}
-        controller={true}
-        layers={layers}
-        onViewStateChange={onViewStateChange}
-      >
-        <MapGL
-          reuseMaps
-          mapStyle="mapbox://styles/mapbox/satellite-v9"
-          mapboxAccessToken={MAPBOX_TOKEN}
-          style={{ width: '100%', height: '100%' }}
-        />
-      </DeckGL>
-    </div>
+    <DeckGL
+      ref={deckRef}
+      initialViewState={INITIAL_VIEW_STATE}
+      controller={true}
+      layers={layers}
+      onViewStateChange={({ viewState: nextViewState }) => {
+        if ('longitude' in nextViewState && 'latitude' in nextViewState && 'zoom' in nextViewState) {
+          setViewState({
+            ...INITIAL_VIEW_STATE,
+            ...nextViewState,
+            pitch: nextViewState.pitch ?? 0,
+            bearing: nextViewState.bearing ?? 0
+          });
+        }
+      }}
+      parameters={{
+        blend: true
+      }}
+    >
+      <MapGL
+        ref={mapRef}
+        reuseMaps
+        mapStyle="mapbox://styles/mapbox/satellite-v9"
+        mapboxAccessToken={MAPBOX_TOKEN}
+        style={{ width: '100%', height: '100%' }}
+      />
+      {hoveredFeature && (
+        <div
+          style={{
+            position: 'absolute',
+            zIndex: 1,
+            pointerEvents: 'none',
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            color: 'white',
+            padding: '8px',
+            borderRadius: '4px',
+            fontSize: '12px',
+            maxWidth: '300px',
+          }}
+        >
+          <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
+            {hoveredFeature.properties.name}
+          </div>
+          <div>Species: {hoveredFeature.properties.species}</div>
+          <div>Height: {hoveredFeature.properties.height}m</div>
+          <div>Diameter: {hoveredFeature.properties.diameter}m</div>
+          <div>Age: {hoveredFeature.properties.age} years</div>
+          <div>Health: {(hoveredFeature.properties.healthScore * 100).toFixed(1)}%</div>
+          <div>Carbon Seq.: {hoveredFeature.properties.carbonSequestration} kg/year</div>
+          <div>Last Inspection: {hoveredFeature.properties.lastInspection}</div>
+        </div>
+      )}
+    </DeckGL>
   );
 }; 

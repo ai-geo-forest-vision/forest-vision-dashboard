@@ -1,10 +1,6 @@
-export interface ViewState {
-  longitude: number;
-  latitude: number;
-  zoom: number;
-  pitch: number;
-  bearing: number;
-}
+import type { MapViewState } from '@deck.gl/core';
+
+export type ViewState = MapViewState;
 
 export interface ForestData {
   id: string;
