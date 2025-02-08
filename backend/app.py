@@ -6,6 +6,8 @@ from typing import List
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from scripts.tree_generation import (AreaType, Rectangle, Tree,
+                                     generate_trees_for_rectangles)
 
 
 class TreeQueryParams(BaseModel):
@@ -28,9 +30,6 @@ class TreeQueryParams(BaseModel):
         }
     }
 
-
-from scripts.tree_generation import (Rectangle, TreeLocation,
-                                     generate_trees_for_rectangles)
 
 app = FastAPI(
     title="Forest Vision API",
@@ -67,14 +66,15 @@ def load_rectangles_from_json() -> List[Rectangle]:
             top_right_long=item["longitude"],
             width_meters=item["width"],
             length_meters=item["length"],
+            area_type=AreaType.PARKING_LOT,  # Always parking lots for now
         )
         for item in data
     ]
     return rectangles
 
 
-@app.get("/trees/", response_model=List[TreeLocation])
-async def get_trees(params: TreeQueryParams = TreeQueryParams()) -> List[TreeLocation]:
+@app.get("/trees/", response_model=List[Tree])
+async def get_trees(params: TreeQueryParams = TreeQueryParams()) -> List[Tree]:
     """
     Get tree locations based on predefined parking lot data.
 
@@ -82,7 +82,7 @@ async def get_trees(params: TreeQueryParams = TreeQueryParams()) -> List[TreeLoc
         params: Query parameters for tree generation.
 
     Returns:
-        List of TreeLocation objects containing the latitude and longitude of each tree.
+        List of Tree objects containing the location and type of each tree.
     """
     print("Received request for trees")
     rectangles = load_rectangles_from_json()
