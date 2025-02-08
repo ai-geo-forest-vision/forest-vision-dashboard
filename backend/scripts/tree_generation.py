@@ -7,9 +7,6 @@ from typing import List, Tuple
 import numpy as np
 from pydantic import BaseModel
 
-# Constants
-TREES_PER_SQUARE_METER = 0.01  # Adjust this value based on desired density
-
 
 class TreeType(str, Enum):
     """Types of trees that can be planted"""
@@ -66,9 +63,15 @@ def _meters_to_lat_long_conversion(latitude: float) -> Tuple[float, float]:
     return meters_to_lat, meters_to_long
 
 
-def _generate_tree_locations(rectangle: Rectangle) -> List[Tree]:
+def _generate_tree_locations(
+    rectangle: Rectangle, trees_per_square_meter: float
+) -> List[Tree]:
     """
     Generate tree locations within a rectangle using uniform density
+
+    Args:
+        rectangle: Rectangle defining the area
+        trees_per_square_meter: Density of trees (trees per square meter)
     """
     # Get conversion factors for the rectangle's latitude
     meters_to_lat, meters_to_long = _meters_to_lat_long_conversion(
@@ -77,7 +80,7 @@ def _generate_tree_locations(rectangle: Rectangle) -> List[Tree]:
 
     # Calculate number of trees based on area and density
     area = rectangle.width_meters * rectangle.length_meters
-    num_trees = int(area * TREES_PER_SQUARE_METER)
+    num_trees = int(area * trees_per_square_meter)
 
     # Generate random positions within the rectangle
     random_widths = np.random.uniform(0, rectangle.width_meters, num_trees)
@@ -104,12 +107,18 @@ def _generate_tree_locations(rectangle: Rectangle) -> List[Tree]:
     return tree_locations
 
 
-def generate_trees_for_rectangles(rectangles: List[Rectangle]) -> List[Tree]:
+def generate_trees_for_rectangles(
+    rectangles: List[Rectangle], trees_per_square_meter: float = 1.0
+) -> List[Tree]:
     """
     Generate tree locations for multiple rectangles
+
+    Args:
+        rectangles: List of rectangles to populate with trees
+        trees_per_square_meter: Density of trees (trees per square meter), defaults to 1.0
     """
     all_trees = []
     for rectangle in rectangles:
-        trees = _generate_tree_locations(rectangle)
+        trees = _generate_tree_locations(rectangle, trees_per_square_meter)
         all_trees.extend(trees)
     return all_trees

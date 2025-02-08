@@ -19,12 +19,18 @@ class TreeQueryParams(BaseModel):
         le=1.0,
         description="Percentage of parking lots to consider (0.0 to 1.0)",
     )
+    trees_per_square_meter: float = Field(
+        default=1.0,
+        gt=0.0,
+        description="Density of trees (trees per square meter)",
+    )
 
     model_config = {
         "json_schema_extra": {
             "examples": [
                 {
                     "percentage": 0.5,
+                    "trees_per_square_meter": 0.01,
                 }
             ]
         }
@@ -45,6 +51,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 def load_rectangles_from_json() -> List[Rectangle]:
     """
@@ -94,7 +101,7 @@ async def get_trees(params: TreeQueryParams = TreeQueryParams()) -> List[Tree]:
         rectangles = random.sample(rectangles, sample_size)
     print(f"Using {len(rectangles)} rectangles after sampling")
 
-    trees = generate_trees_for_rectangles(rectangles)
+    trees = generate_trees_for_rectangles(rectangles, params.trees_per_square_meter)
     print(f"Generated {len(trees)} trees")
     return trees
 
