@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import List
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 
@@ -37,6 +38,14 @@ app = FastAPI(
     version="1.0.0",
 )
 
+# Add CORS middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000"],  # Frontend URLs
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 def load_rectangles_from_json() -> List[Rectangle]:
     """
@@ -46,8 +55,10 @@ def load_rectangles_from_json() -> List[Rectangle]:
         List of Rectangle objects converted from the JSON data.
     """
     dataset_path = Path("./datasets/coordinates-small.json")
+    print(f"Loading data from {dataset_path.absolute()}")
     with open(dataset_path, "r") as f:
         data = json.load(f)
+    print(f"Loaded {len(data)} rectangles from JSON")
 
     # Convert JSON objects to Rectangle models
     rectangles = [
@@ -73,14 +84,19 @@ async def get_trees(params: TreeQueryParams = TreeQueryParams()) -> List[TreeLoc
     Returns:
         List of TreeLocation objects containing the latitude and longitude of each tree.
     """
+    print("Received request for trees")
     rectangles = load_rectangles_from_json()
+    print(f"Loaded {len(rectangles)} rectangles")
 
     # Calculate how many rectangles to sample
     sample_size = int(len(rectangles) * params.percentage)
     if sample_size < len(rectangles):
         rectangles = random.sample(rectangles, sample_size)
+    print(f"Using {len(rectangles)} rectangles after sampling")
 
-    return generate_trees_for_rectangles(rectangles)
+    trees = generate_trees_for_rectangles(rectangles)
+    print(f"Generated {len(trees)} trees")
+    return trees
 
 
 @app.get("/health")
@@ -94,4 +110,4 @@ async def health_check():
 if __name__ == "__main__":
     import uvicorn
 
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=5003)

@@ -5,7 +5,8 @@ import { Map as MapGL } from 'react-map-gl';
 import type { MapRef } from 'react-map-gl';
 import type { PickingInfo, Deck } from '@deck.gl/core';
 import type { Feature, Point } from 'geojson';
-import { mockTreeData, TreeProperties } from '../../services/mockData';
+import type { TreeProperties } from '../../services/mockData';
+import { fetchTrees } from '../../services/treeService';
 import { createLayers } from './layers';
 
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
@@ -18,10 +19,13 @@ interface ViewState {
   bearing: number;
 }
 
+// Center point calculated from the coordinates range
+// Latitude range: 37.7398313013 to 37.7979671982
+// Longitude range: -122.4667163023 to -122.398147199
 const INITIAL_VIEW_STATE: ViewState = {
-  longitude: -122.4194,
-  latitude: 37.7749,
-  zoom: 14,
+  longitude: -122.432431,  // Center of longitude range
+  latitude: 37.768899,     // Center of latitude range
+  zoom: 13,               // Adjusted zoom to show all points
   pitch: 0,
   bearing: 0
 };
@@ -31,12 +35,33 @@ export const MapView = () => {
   const deckRef = useRef<Deck>(null);
   const [viewState, setViewState] = useState<ViewState>(INITIAL_VIEW_STATE);
   const [hoveredFeature, setHoveredFeature] = useState<Feature<Point, TreeProperties> | null>(null);
+  const [trees, setTrees] = useState<Feature<Point, TreeProperties>[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [treeCount, setTreeCount] = useState(0);
+
+  useEffect(() => {
+    const loadTrees = async () => {
+      setIsLoading(true);
+      try {
+        const treeData = await fetchTrees();
+        console.log('Loaded trees:', treeData.length);
+        setTrees(treeData);
+        setTreeCount(treeData.length);
+      } catch (error) {
+        console.error('Error loading trees:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadTrees();
+  }, []);
 
   const onHover = (info: PickingInfo) => {
     setHoveredFeature(info.object as Feature<Point, TreeProperties> | null);
   };
 
-  const layers = useMemo(() => createLayers(mockTreeData.features, onHover), []);
+  const layers = useMemo(() => createLayers(trees, onHover), [trees]);
 
   // Update cursor style based on hover state
   useEffect(() => {
@@ -49,11 +74,6 @@ export const MapView = () => {
   // Cleanup WebGL context on unmount
   useEffect(() => {
     return () => {
-      if (deckRef.current) {
-        // @ts-ignore - finalize exists but is not in types
-        deckRef.current.finalize();
-        deckRef.current = null;
-      }
       if (mapRef.current) {
         const map = mapRef.current.getMap();
         if (map) {
@@ -114,6 +134,38 @@ export const MapView = () => {
           <div>Health: {(hoveredFeature.properties.healthScore * 100).toFixed(1)}%</div>
           <div>Carbon Seq.: {hoveredFeature.properties.carbonSequestration} kg/year</div>
           <div>Last Inspection: {hoveredFeature.properties.lastInspection}</div>
+        </div>
+      )}
+      {isLoading ? (
+        <div
+          style={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            color: 'white',
+            padding: '16px',
+            borderRadius: '8px',
+            zIndex: 1000,
+          }}
+        >
+          Loading trees...
+        </div>
+      ) : (
+        <div
+          style={{
+            position: 'absolute',
+            bottom: 20,
+            left: 20,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            color: 'white',
+            padding: '8px',
+            borderRadius: '4px',
+            fontSize: '12px',
+          }}
+        >
+          Trees loaded: {treeCount}
         </div>
       )}
     </DeckGL>
