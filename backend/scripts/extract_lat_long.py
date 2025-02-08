@@ -1,7 +1,7 @@
 import pandas as pd
 import json
 
-WIDTH_HEIGHT_CONSTANT = 18 # meters
+WIDTH_LENGTH_CONSTANT = 18 # meters
 
 def extract_lat_lon_to_json(csv_file, json_output):
     # Read CSV
@@ -19,10 +19,10 @@ def extract_lat_lon_to_json(csv_file, json_output):
     # Extract lat/lon values (using first detected pair)
     coordinates = df[[lat_columns[0], lon_columns[0]]].dropna().to_dict(orient="records")
 
-    # Add width and height to each record
+    # Add width and length to each record
     for record in coordinates:
-        record["width"] = WIDTH_HEIGHT_CONSTANT
-        record["height"] = WIDTH_HEIGHT_CONSTANT
+        record["width"] = WIDTH_LENGTH_CONSTANT
+        record["length"] = WIDTH_LENGTH_CONSTANT
 
     # Save as JSON
     with open(json_output, "w") as json_file:
