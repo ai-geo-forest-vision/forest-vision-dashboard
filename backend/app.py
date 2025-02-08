@@ -1,8 +1,33 @@
 import json
+import random
 from pathlib import Path
 from typing import List
 
 from fastapi import FastAPI
+from pydantic import BaseModel, Field
+
+
+class TreeQueryParams(BaseModel):
+    """Query parameters for tree generation"""
+
+    percentage: float = Field(
+        default=1.0,
+        ge=0.0,
+        le=1.0,
+        description="Percentage of parking lots to consider (0.0 to 1.0)",
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "examples": [
+                {
+                    "percentage": 0.5,
+                }
+            ]
+        }
+    }
+
+
 from scripts.tree_generation import (Rectangle, TreeLocation,
                                      generate_trees_for_rectangles)
 
@@ -38,14 +63,23 @@ def load_rectangles_from_json() -> List[Rectangle]:
 
 
 @app.get("/trees/", response_model=List[TreeLocation])
-async def get_trees() -> List[TreeLocation]:
+async def get_trees(params: TreeQueryParams = TreeQueryParams()) -> List[TreeLocation]:
     """
-    Get all tree locations based on predefined parking lot data.
+    Get tree locations based on predefined parking lot data.
+
+    Args:
+        params: Query parameters for tree generation.
 
     Returns:
         List of TreeLocation objects containing the latitude and longitude of each tree.
     """
     rectangles = load_rectangles_from_json()
+
+    # Calculate how many rectangles to sample
+    sample_size = int(len(rectangles) * params.percentage)
+    if sample_size < len(rectangles):
+        rectangles = random.sample(rectangles, sample_size)
+
     return generate_trees_for_rectangles(rectangles)
 
 
