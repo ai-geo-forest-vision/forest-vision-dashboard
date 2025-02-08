@@ -6,16 +6,24 @@ export interface TreeLocation {
   longitude: number;
 }
 
-export const fetchTrees = async (): Promise<Feature<Point, TreeProperties>[]> => {
+export const fetchTrees = async (
+  coverage: number = 100,
+  treeDensity: number = 0.01 // trees per square meter
+): Promise<Feature<Point, TreeProperties>[]> => {
   try {
-    const response = await fetch('/api/trees/');
+    // Convert coverage from percentage (0-100) to decimal (0-1)
+    const percentage = coverage / 100;
+    
+    // treeDensity is already in trees per square meter, which is what the backend expects
+    const response = await fetch(`/api/trees/?percentage=${percentage}&trees_per_square_meter=${treeDensity}`);
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status}`);
     }
     const treeLocations = await response.json();
     
     // Add debug logging
-    console.log('Tree locations received:', treeLocations);
+    console.log(`Fetching trees with density: ${treeDensity} trees/m²`);
+    console.log('Tree locations received:', treeLocations.length);
     
     // Ensure treeLocations is an array
     const locationsArray = Array.isArray(treeLocations) ? treeLocations : [];

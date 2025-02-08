@@ -1,6 +1,7 @@
 import { MapView } from './components/Map/Map';
 import { ControlPanel } from './components/ControlPanel';
 import { Box, CssBaseline, ThemeProvider, createTheme } from '@mui/material';
+import { useState } from 'react';
 
 const theme = createTheme({
   palette: {
@@ -15,6 +16,9 @@ const theme = createTheme({
 });
 
 function App() {
+  const [selectedParkingType, setSelectedParkingType] = useState<string>('all');
+  const [treeDensity, setTreeDensity] = useState<number>(0.01); // Default 0.01 trees per square meter
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
@@ -32,8 +36,16 @@ function App() {
             position: 'relative',
           }}
         >
-          <MapView />
-          <ControlPanel />
+          <MapView 
+            parkingType={selectedParkingType}
+            treeDensity={treeDensity}
+          />
+          <ControlPanel 
+            selectedParkingType={selectedParkingType}
+            onParkingTypeChange={setSelectedParkingType}
+            treeDensity={treeDensity}
+            onTreeDensityChange={setTreeDensity}
+          />
         </Box>
       </Box>
     </ThemeProvider>

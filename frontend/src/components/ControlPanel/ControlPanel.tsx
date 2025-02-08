@@ -10,6 +10,12 @@ interface TreeType {
   albedoImpact: number;
 }
 
+interface ParkingType {
+  id: string;
+  name: string;
+  description: string;
+}
+
 const TREE_TYPES: TreeType[] = [
   { id: 'sequoia', name: 'Giant Sequoia', co2PerYear: 1000, albedoImpact: 0.35 },
   { id: 'redwood', name: 'Coastal Redwood', co2PerYear: 900, albedoImpact: 0.32 },
@@ -18,19 +24,38 @@ const TREE_TYPES: TreeType[] = [
   { id: 'cypress', name: 'Monterey Cypress', co2PerYear: 400, albedoImpact: 0.25 },
 ];
 
-export const ControlPanel = () => {
-  const [budget, setBudget] = useState<number>(1000000);
+const PARKING_TYPES: ParkingType[] = [
+  { id: 'surface', name: 'Surface Parking Lots', description: 'Ground-level parking areas' },
+  { id: 'garage', name: 'Parking Garages', description: 'Multi-level parking structures' },
+  { id: 'street', name: 'Street Parking', description: 'On-street parking spaces' },
+  { id: 'all', name: 'All Parking Types', description: 'All available parking spaces' },
+];
+
+interface ControlPanelProps {
+  selectedParkingType: string;
+  onParkingTypeChange: (parkingType: string) => void;
+  treeDensity: number;
+  onTreeDensityChange: (density: number) => void;
+}
+
+export const ControlPanel = ({ 
+  selectedParkingType, 
+  onParkingTypeChange,
+  treeDensity,
+  onTreeDensityChange
+}: ControlPanelProps) => {
   const [selectedTreeType, setSelectedTreeType] = useState<string>(TREE_TYPES[0].id);
-  const [previousBudget, setPreviousBudget] = useState<number>(budget);
   const [previousCO2, setPreviousCO2] = useState<number>(0);
   const [previousAlbedo, setPreviousAlbedo] = useState<number>(0);
 
-  const formatBudget = (value: number) => {
-    return `$${value.toLocaleString()}`;
+  const formatDensity = (value: number) => {
+    return `${value.toFixed(3)} trees/m²`;
   };
 
   const selectedTree = TREE_TYPES.find(tree => tree.id === selectedTreeType) || TREE_TYPES[0];
-  const estimatedTrees = Math.floor(budget / 1000); // Assuming $1000 per tree
+  const selectedParking = PARKING_TYPES.find(type => type.id === selectedParkingType) || PARKING_TYPES[0];
+  const estimatedArea = 1000 * 10000; // Fixed 1000 hectares in square meters
+  const estimatedTrees = Math.floor(estimatedArea * treeDensity);
   const totalCO2Offset = (estimatedTrees * selectedTree.co2PerYear) / 1000; // Convert to metric tons
   const avgAlbedo = selectedTree.albedoImpact;
 
@@ -41,12 +66,11 @@ export const ControlPanel = () => {
   // Update previous values after a delay
   useEffect(() => {
     const timer = setTimeout(() => {
-      setPreviousBudget(budget);
       setPreviousCO2(totalCO2Offset);
       setPreviousAlbedo(avgAlbedo);
     }, 1000);
     return () => clearTimeout(timer);
-  }, [budget, totalCO2Offset, avgAlbedo]);
+  }, [totalCO2Offset, avgAlbedo]);
 
   const DifferenceIndicator = ({ value, unit }: { value: number; unit: string }) => {
     if (Math.abs(value) < 0.01) return null;
@@ -78,23 +102,59 @@ export const ControlPanel = () => {
       </Typography>
       
       <Box sx={{ mt: 4 }}>
-        <Typography gutterBottom>Yearly Budget Allocation</Typography>
+        <Typography gutterBottom>Tree Density</Typography>
         <Slider
-          value={budget}
-          onChange={(_, newValue) => setBudget(newValue as number)}
-          min={100000}
-          max={10000000}
-          step={100000}
+          value={treeDensity}
+          onChange={(_, newValue) => onTreeDensityChange(newValue as number)}
+          min={0.001}
+          max={0.02}
+          step={0.001}
           valueLabelDisplay="auto"
-          valueLabelFormat={formatBudget}
+          valueLabelFormat={formatDensity}
           marks={[
-            { value: 100000, label: '$100k' },
-            { value: 10000000, label: '$10M' }
+            { value: 0.001, label: '0.001' },
+            { value: 0.01, label: '0.01' },
+            { value: 0.02, label: '0.02' }
           ]}
         />
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1, color: 'rgba(255, 255, 255, 0.7)' }}>
-          Current Yearly Budget: {formatBudget(budget)}
+          Density: {formatDensity(treeDensity)}
         </Typography>
+      </Box>
+
+      <Box sx={{ mt: 4 }}>
+        <FormControl fullWidth>
+          <InputLabel id="parking-type-label" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+            Parking Type
+          </InputLabel>
+          <Select
+            labelId="parking-type-label"
+            value={selectedParkingType}
+            label="Parking Type"
+            onChange={(e) => onParkingTypeChange(e.target.value)}
+            sx={{
+              color: 'white',
+              '.MuiOutlinedInput-notchedOutline': {
+                borderColor: 'rgba(255, 255, 255, 0.3)',
+              },
+              '&:hover .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'rgba(255, 255, 255, 0.5)',
+              },
+              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                borderColor: 'primary.main',
+              },
+              '.MuiSvgIcon-root': {
+                color: 'rgba(255, 255, 255, 0.7)',
+              },
+            }}
+          >
+            {PARKING_TYPES.map((type) => (
+              <MenuItem key={type.id} value={type.id}>
+                {type.name}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
       </Box>
 
       <Box sx={{ mt: 4 }}>
@@ -161,8 +221,17 @@ export const ControlPanel = () => {
           </Box>
         </Box>
 
+        <Box sx={{ mt: 2, p: 2, bgcolor: 'rgba(255, 255, 255, 0.05)', borderRadius: 1 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+            Area Coverage
+          </Typography>
+          <Typography variant="h6" sx={{ color: '#81C784', mt: 1 }}>
+            {estimatedArea.toLocaleString()} square meters
+          </Typography>
+        </Box>
+
         <Typography variant="body2" sx={{ mt: 2, color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.75rem' }}>
-          Estimated Trees per Year: {estimatedTrees.toLocaleString()}
+          Estimated Trees: {estimatedTrees.toLocaleString()}
         </Typography>
       </Box>
     </Paper>

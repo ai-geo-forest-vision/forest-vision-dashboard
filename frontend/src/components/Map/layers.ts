@@ -1,13 +1,8 @@
-import { ScatterplotLayer, IconLayer } from '@deck.gl/layers';
-import { HexagonLayer } from '@deck.gl/aggregation-layers';
+import { ScatterplotLayer } from '@deck.gl/layers';
 import type { PickingInfo } from '@deck.gl/core';
 import type { Feature, Point } from 'geojson';
 import type { TreeProperties } from '../../services/mockData';
-
-// Load tree icon
-const ICON_MAPPING = {
-  tree: { x: 0, y: 0, width: 128, height: 128, mask: true }
-};
+import { COORDINATE_SYSTEM } from '@deck.gl/core';
 
 const HEALTH_COLORS: Record<string, [number, number, number, number]> = {
   EXCELLENT: [0, 255, 0, 200] as [number, number, number, number],
@@ -28,37 +23,41 @@ const getHealthColor = (score: number): [number, number, number, number] => {
 export const createLayers = (
   data: Feature<Point, TreeProperties>[],
   onHover: (info: PickingInfo) => void
-) => [
-  new IconLayer({
-    id: 'tree-icons',
-    data,
-    pickable: true,
-    iconAtlas: '/tree.png',
-    iconMapping: ICON_MAPPING,
-    getIcon: () => 'tree',
-    sizeScale: 15,
-    getPosition: d => d.geometry.coordinates,
-    getSize: d => Math.max(10, Math.min(20, d.properties.height / 2)),
-    getColor: d => getHealthColor(d.properties.healthScore),
-    onHover
-  }),
-  new HexagonLayer({
-    id: 'tree-density',
-    data,
-    pickable: true,
-    extruded: true,
-    radius: 100,
-    elevationScale: 10,
-    getPosition: d => d.geometry.coordinates,
-    colorRange: [
-      [237, 248, 233],
-      [186, 228, 179],
-      [116, 196, 118],
-      [49, 163, 84],
-      [0, 109, 44]
-    ],
-    coverage: 0.8,
-    upperPercentile: 90,
-    opacity: 0.3
-  })
-]; 
+) => {
+  // Debug log to verify coordinates
+  console.log('Tree coordinates sample:', data.slice(0, 5).map(d => d.geometry.coordinates));
+
+  return [
+    new ScatterplotLayer({
+      id: 'trees',
+      data,
+      pickable: true,
+      opacity: 0.8,
+      stroked: true,
+      filled: true,
+      radiusScale: 1,
+      radiusMinPixels: 3,
+      radiusMaxPixels: 15,
+      lineWidthMinPixels: 1,
+      getPosition: (d: Feature<Point, TreeProperties>) => {
+        const coords = d.geometry.coordinates as [number, number];
+        // Additional coordinate validation
+        if (!Array.isArray(coords) || coords.length !== 2 || 
+            !Number.isFinite(coords[0]) || !Number.isFinite(coords[1])) {
+          console.warn('Invalid coordinates:', coords);
+          return [0, 0];
+        }
+        return coords;
+      },
+      getRadius: (d: Feature<Point, TreeProperties>) => Math.max(5, Math.min(10, d.properties.height / 3)),
+      getFillColor: (d: Feature<Point, TreeProperties>) => getHealthColor(d.properties.healthScore),
+      getLineColor: [0, 0, 0],
+      onHover,
+      updateTriggers: {
+        getPosition: data,
+        getRadius: data,
+        getFillColor: data
+      }
+    })
+  ];
+}; 
