@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 # Python
 __pycache__/
 *.py[cod]
@@ -37,8 +36,6 @@ node_modules/
 ./preprocessing/data/
 *.tif
 *.vrt
-*.json
-*.geojson
 *.tar.gz
 
 cache/
@@ -217,4 +214,3 @@ cython_debug/
 =======
 .now*
 backend/node_modules
->>>>>>> 53b5975074a48b42b01b06b09b2b41082c76acd6
