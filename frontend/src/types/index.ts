@@ -22,4 +22,26 @@ export interface LayerConfig {
 export interface MapStyle {
   name: string;
   url: string;
+}
+
+export interface IconMapping {
+  [key: string]: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+}
+
+export interface TreeProperties {
+  id: string;
+  name: string;
+  species: string;
+  height: number;
+  diameter: number;
+  age: number;
+  healthScore: number;
+  lastInspection: string;
+  carbonSequestration: number;
+  crownDiameter: number; // Added for tree spread visualization
 } 

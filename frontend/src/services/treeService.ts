@@ -46,6 +46,7 @@ export const fetchTrees = async (
       const diameter = 0.5 + Math.random() * 2.5; // 0.5-3m
       const age = Math.round(height * 2.5 + Math.random() * 20);
       const healthScore = 0.5 + Math.random() * 0.5;
+      const crownDiameter = Math.max(5, diameter * 3 + Math.random() * 5); // Crown spread based on trunk diameter
       
       return {
         type: 'Feature',
@@ -61,6 +62,7 @@ export const fetchTrees = async (
           diameter,
           age,
           healthScore,
+          crownDiameter,
           lastInspection: '2024-01-15',
           carbonSequestration: Math.round(height * diameter * 50)
         }

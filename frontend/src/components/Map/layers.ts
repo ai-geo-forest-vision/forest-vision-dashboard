@@ -1,62 +1,52 @@
-import { ScatterplotLayer } from '@deck.gl/layers';
+import { IconLayer } from '@deck.gl/layers';
 import type { PickingInfo } from '@deck.gl/core';
 import type { Feature, Point } from 'geojson';
-import type { TreeProperties } from '../../services/mockData';
-import { COORDINATE_SYSTEM } from '@deck.gl/core';
+import type { TreeProperties, IconMapping } from '../../types';
+import { Position } from '@deck.gl/core';
 
-const HEALTH_COLORS: Record<string, [number, number, number, number]> = {
-  EXCELLENT: [0, 255, 0, 200] as [number, number, number, number],
-  GOOD: [150, 255, 0, 200] as [number, number, number, number],
-  FAIR: [255, 255, 0, 200] as [number, number, number, number],
-  POOR: [255, 150, 0, 200] as [number, number, number, number],
-  CRITICAL: [255, 0, 0, 200] as [number, number, number, number]
+// Define the icon mapping for different tree species
+const ICON_MAPPING: IconMapping = {
+  sequoia: { x: 0, y: 0, width: 128, height: 128 },
+  redwood: { x: 128, y: 0, width: 128, height: 128 },
+  oak: { x: 256, y: 0, width: 128, height: 128 },
+  eucalyptus: { x: 384, y: 0, width: 128, height: 128 },
+  cypress: { x: 512, y: 0, width: 128, height: 128 }
 };
 
-const getHealthColor = (score: number): [number, number, number, number] => {
-  if (score >= 0.9) return HEALTH_COLORS.EXCELLENT;
-  if (score >= 0.75) return HEALTH_COLORS.GOOD;
-  if (score >= 0.6) return HEALTH_COLORS.FAIR;
-  if (score >= 0.4) return HEALTH_COLORS.POOR;
-  return HEALTH_COLORS.CRITICAL;
-};
+// Fixed size for all tree icons in pixels
+const ICON_SIZE = 40;
 
 export const createLayers = (
   data: Feature<Point, TreeProperties>[],
   onHover: (info: PickingInfo) => void
 ) => {
-  // Debug log to verify coordinates
-  console.log('Tree coordinates sample:', data.slice(0, 5).map(d => d.geometry.coordinates));
-
   return [
-    new ScatterplotLayer({
+    new IconLayer<Feature<Point, TreeProperties>>({
       id: 'trees',
       data,
       pickable: true,
-      opacity: 0.8,
-      stroked: true,
-      filled: true,
-      radiusScale: 1,
-      radiusMinPixels: 3,
-      radiusMaxPixels: 15,
-      lineWidthMinPixels: 1,
-      getPosition: (d: Feature<Point, TreeProperties>) => {
-        const coords = d.geometry.coordinates as [number, number];
-        // Additional coordinate validation
-        if (!Array.isArray(coords) || coords.length !== 2 || 
-            !Number.isFinite(coords[0]) || !Number.isFinite(coords[1])) {
-          console.warn('Invalid coordinates:', coords);
-          return [0, 0];
-        }
-        return coords;
+      iconAtlas: '/tree-satellite-sprites.png',
+      iconMapping: ICON_MAPPING,
+      getIcon: d => d.properties.species.toLowerCase(),
+      sizeScale: 1,
+      sizeUnits: 'pixels',
+      getSize: () => ICON_SIZE, // Fixed size for all icons
+      billboard: true, // Keep icons facing the camera
+      getPosition: d => {
+        const coords = d.geometry.coordinates;
+        return Array.isArray(coords) && coords.length === 2 
+          ? new Float32Array([coords[0], coords[1], 0]) 
+          : new Float32Array([0, 0, 0]);
       },
-      getRadius: (d: Feature<Point, TreeProperties>) => Math.max(5, Math.min(10, d.properties.height / 3)),
-      getFillColor: (d: Feature<Point, TreeProperties>) => getHealthColor(d.properties.healthScore),
-      getLineColor: [0, 0, 0],
+      getColor: d => {
+        const health = d.properties.healthScore;
+        // Adjust opacity based on health while keeping full color
+        return [255, 255, 255, Math.max(100, health * 255)];
+      },
       onHover,
       updateTriggers: {
-        getPosition: data,
-        getRadius: data,
-        getFillColor: data
+        getIcon: [data],
+        getColor: [data]
       }
     })
   ];
