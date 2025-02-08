@@ -29,6 +29,7 @@ class AreaType(str, Enum):
     GARAGE = "garage"
     INDUSTRIAL = "industrial"
     COMMERCIAL = "commercial"
+    STREET_SIDE = "street_side"
 
 
 class Rectangle(BaseModel):

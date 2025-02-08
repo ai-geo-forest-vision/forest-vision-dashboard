@@ -1,7 +1,9 @@
 import pandas as pd
 import json
 
-WIDTH_LENGTH_CONSTANT = 18 # meters
+STREET_SIDE_WIDTH_CONSTANT = 1 # meters
+STREET_SIDE_LENGTH_CONSTANT = 2 # meters
+# PARKING_LOT_WIDTH_LENGTH_CONSTANT = 18 # meters
 
 def extract_lat_lon_to_json(csv_file, json_output):
     # Read CSV
@@ -9,8 +11,8 @@ def extract_lat_lon_to_json(csv_file, json_output):
     df.columns = df.columns.str.lower()  # Convert column names to lowercase
 
     # Identify possible latitude/longitude columns
-    lat_columns = [col for col in df.columns if "main_entrance_lat" in col.lower()]
-    lon_columns = [col for col in df.columns if "main_entrance_long" in col.lower()]
+    lat_columns = [col for col in df.columns if "lat" in col.lower()]
+    lon_columns = [col for col in df.columns if "long" in col.lower()]
 
     # Ensure matching latitude and longitude columns
     if not lat_columns or not lon_columns:
@@ -23,8 +25,8 @@ def extract_lat_lon_to_json(csv_file, json_output):
 
     # Add width and length to each record
     for record in coordinates:
-        record["width"] = WIDTH_LENGTH_CONSTANT
-        record["length"] = WIDTH_LENGTH_CONSTANT
+        record["width"] = STREET_SIDE_WIDTH_CONSTANT
+        record["length"] = STREET_SIDE_LENGTH_CONSTANT
 
     # Save as JSON
     with open(json_output, "w") as json_file:
@@ -33,8 +35,8 @@ def extract_lat_lon_to_json(csv_file, json_output):
     print(f"✅ Extracted {len(coordinates)} coordinates and saved to {json_output}")
 
 # Example usage
-# csv_file = "../datasets/Parking_Meters.csv"  # Change to your CSV file
-csv_file = "../datasets/Off_street_Parking.csv"
-# json_output = "../datasets/coordinates.json"
-json_output = "../datasets/parking-lot-coordinates.json"
+csv_file = "../datasets/Parking_Meters.csv"  # Change to your CSV file
+# csv_file = "../datasets/Off_street_Parking.csv"
+json_output = "../datasets/coordinates.json"
+# json_output = "../datasets/parking-lot-coordinates.json"
 extract_lat_lon_to_json(csv_file, json_output)
