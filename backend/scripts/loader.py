@@ -1,11 +1,13 @@
 """Functions for loading and processing street data."""
 
 import csv
+import json
 import re
-from typing import List, Tuple
+import sys
+from typing import Dict, List, Tuple
 
-from scripts.streetside import Coordinate, generate_rectangles
-from scripts.tree_generation import AreaType, Rectangle
+from streetside import Coordinate, generate_rectangles
+from tree_generation import AreaType, Rectangle
 
 
 def parse_street_coordinates(csv_path: str) -> List[Tuple[Coordinate, Coordinate]]:
@@ -71,3 +73,50 @@ def generate_street_rectangles(
         rectangles.extend([rect1, rect2])
 
     return rectangles
+
+
+def _rectangle_to_dict(rectangle: Rectangle) -> Dict:
+    """Convert a Rectangle object to a dictionary in the desired format."""
+    return {
+        "latitude": rectangle.top_right_lat,
+        "longitude": rectangle.top_right_long,
+        "width": rectangle.width_meters,
+        "length": rectangle.length_meters,
+    }
+
+
+def main():
+    """Process CSV file from command line argument and output rectangles as JSON."""
+    if len(sys.argv) != 2:
+        print("Usage: python -m scripts.loader <csv_file_path>")
+        sys.exit(1)
+
+    csv_path = sys.argv[1]
+    output_path = csv_path.rsplit(".", 1)[0] + "_rectangles.json"
+
+    try:
+        # Generate rectangles from the CSV file
+        rectangles = generate_street_rectangles(
+            csv_path, offset_meters=1.0, width_meters=1.0
+        )
+
+        # Convert rectangles to the desired format
+        rectangle_dicts = [_rectangle_to_dict(rect) for rect in rectangles]
+
+        # Write to JSON file
+        with open(output_path, "w") as f:
+            json.dump(rectangle_dicts, f, indent=4)
+
+        print(f"Successfully processed {len(rectangles)} rectangles")
+        print(f"Output written to: {output_path}")
+
+    except FileNotFoundError:
+        print(f"Error: Could not find CSV file: {csv_path}")
+        sys.exit(1)
+    except Exception as e:
+        print(f"Error processing file: {e}")
+        sys.exit(1)
+
+
+if __name__ == "__main__":
+    main()
