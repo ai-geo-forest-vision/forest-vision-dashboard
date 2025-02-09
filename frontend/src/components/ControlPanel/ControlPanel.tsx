@@ -1,6 +1,6 @@
 import { Box, Paper, Slider, Typography, Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Species, CALIFORNIA_SPECIES } from '../../types';
 
 interface ControlPanelProps {
@@ -16,7 +16,6 @@ export const ControlPanel = ({
   onTreeDensityChange,
   onLandPercentageChange
 }: ControlPanelProps) => {
-  const [asphaltArea, setAsphaltArea] = useState<number>(1000);
   const [treeDensity, setTreeDensity] = useState<number>(0.01); // trees per square meter
   const [landPercentage, setLandPercentage] = useState<number>(100); // percentage of available land
   const [speciesDistribution, setSpeciesDistribution] = useState<Record<Species, number>>({
@@ -92,7 +91,16 @@ export const ControlPanel = ({
   const handleLandPercentageChange = (newValue: number) => {
     setLandPercentage(newValue);
     onLandPercentageChange?.(newValue / 100); // Convert to decimal for the API
+    // Calculate area based on percentage of 206.7 million square feet
+    const totalArea = 20670000 * (newValue / 100);
+    onAsphaltAreaChange(totalArea);
   };
+
+  // Initial calculation of area when component mounts
+  useEffect(() => {
+    const initialArea = 206700000 * (landPercentage / 100);
+    onAsphaltAreaChange(initialArea);
+  }, []);
 
   return (
     <Paper
@@ -150,31 +158,7 @@ export const ControlPanel = ({
           ]}
         />
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1, color: 'rgba(255, 255, 255, 0.7)' }}>
-          Using {landPercentage}% of available land
-        </Typography>
-      </Box>
-
-      <Box sx={{ mt: 4 }}>
-        <Typography gutterBottom>Asphalt Area to Convert</Typography>
-        <Slider
-          value={asphaltArea}
-          onChange={(_, newValue) => {
-            setAsphaltArea(newValue as number);
-            onAsphaltAreaChange(newValue as number);
-          }}
-          min={100}
-          max={10000}
-          step={100}
-          valueLabelDisplay="auto"
-          valueLabelFormat={formatArea}
-          marks={[
-            { value: 100, label: '100' },
-            { value: 5000, label: '5k' },
-            { value: 10000, label: '10k' }
-          ]}
-        />
-        <Typography variant="body2" color="text.secondary" sx={{ mt: 1, color: 'rgba(255, 255, 255, 0.7)' }}>
-          Area: {formatArea(asphaltArea)}
+          Using {landPercentage}% of available land ({((206700000 * landPercentage) / 100).toLocaleString()} sq ft)
         </Typography>
       </Box>
 
