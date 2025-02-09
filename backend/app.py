@@ -129,7 +129,7 @@ def load_rectangles_from_json() -> List[Rectangle]:
         List of Rectangle objects converted from the JSON data.
     """
     parking_lots_path = Path("./datasets/parking-lot-coordinates.json")
-    street_side_path = Path("./datasets/coordinates-small.json")
+    street_side_path = Path("./datasets/On_Street_Parking_rectangles.json")
 
     rectangles = load_rectangles_from_path(parking_lots_path, AreaType.PARKING_LOT)
     street_side_rectangles = load_rectangles_from_path(
