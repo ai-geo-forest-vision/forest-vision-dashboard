@@ -6,10 +6,10 @@ from typing import Dict, List
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from schemas.species import SPECIES_DATA, Species
 from scripts.tree_generation import (AreaType, Rectangle, Tree,
                                      generate_trees_for_rectangles)
 from services.getAsphaultConversionResults import plan_asphalt_conversion
-from schemas.species import Species, SPECIES_DATA
 
 
 class TreeQueryParams(BaseModel):
@@ -93,51 +93,50 @@ app.add_middleware(
 )
 
 
-def load_rectangles_from_json() -> List[Rectangle]:
+def load_rectangles_from_path(file_path: Path, area_type: AreaType) -> List[Rectangle]:
     """
-    Load rectangle data from JSON file in the datasets directory.
+    Load rectangle data from a JSON file and convert to Rectangle objects.
+
+    Args:
+        file_path: Path to the JSON file containing rectangle data
+        area_type: Type of area (parking lot or street side)
 
     Returns:
-        List of Rectangle objects converted from the JSON data.
+        List of Rectangle objects converted from the JSON data
     """
-    parking_lots_path = Path("./datasets/parking-lot-coordinates.json")
-    print(f"Loading data from {parking_lots_path.absolute()}")
-    with open(parking_lots_path, "r") as f:
+    print(f"Loading data from {file_path.absolute()}")
+    with open(file_path, "r") as f:
         data = json.load(f)
-    print(f"Loaded parking lot {len(data)} rectangles from JSON")
+    print(f"Loaded {len(data)} rectangles from JSON")
 
-    rectangles = [
+    return [
         Rectangle(
             top_right_lat=item["latitude"],
             top_right_long=item["longitude"],
             width_meters=item["width"],
             length_meters=item["length"],
-            area_type=AreaType.PARKING_LOT,
+            area_type=area_type,
         )
         for item in data
     ]
 
-    street_side_path = Path("./datasets/coordinates-small.json")
-    print(f"Loading data from {street_side_path.absolute()}")
-    with open(street_side_path, "r") as f:
-        street_side_data = json.load(f)
-    print(f"Loaded street side {len(street_side_data)} rectangles from JSON")
-    # Merge datasets
-    data.extend(street_side_data)
-    # Convert JSON objects to Rectangle models
-    rectangles.extend(
-        [
-            Rectangle(
-                top_right_lat=item["latitude"],
-                top_right_long=item["longitude"],
-                width_meters=item["width"],
-                length_meters=item["length"],
-                area_type=AreaType.STREET_SIDE,
-            )
-            for item in data
-        ]
+
+def load_rectangles_from_json() -> List[Rectangle]:
+    """
+    Load rectangle data from JSON files in the datasets directory.
+
+    Returns:
+        List of Rectangle objects converted from the JSON data.
+    """
+    parking_lots_path = Path("./datasets/parking-lot-coordinates.json")
+    street_side_path = Path("./datasets/On_Street_Parking_rectangles.json")
+
+    rectangles = load_rectangles_from_path(parking_lots_path, AreaType.PARKING_LOT)
+    street_side_rectangles = load_rectangles_from_path(
+        street_side_path, AreaType.STREET_SIDE
     )
-    return rectangles
+
+    return rectangles + street_side_rectangles
 
 
 @app.get("/trees/", response_model=List[Tree])
