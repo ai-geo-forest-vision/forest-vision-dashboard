@@ -6,6 +6,7 @@ from typing import List, Tuple
 
 import numpy as np
 from pydantic import BaseModel
+from schemas.species import Species
 
 
 class TreeType(str, Enum):

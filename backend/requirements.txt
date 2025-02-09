@@ -34,3 +34,6 @@ uvicorn==0.34.0
 virtualenv==20.26.6
 Werkzeug==3.1.3
 zipp==3.21.0
+mercantile==1.2.1
+tqdm==4.66.1
+mapbox-vector-tile==2.0.1

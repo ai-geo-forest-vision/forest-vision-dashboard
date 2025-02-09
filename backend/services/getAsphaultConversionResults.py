@@ -1,41 +1,10 @@
-species_data_california = {
-    "coast_live_oak": {
-        "planting_cost": 350,           # $ per sapling (purchase + labor)
-        "annual_maintenance_cost": 50,  # $/year/tree
-        "annual_co2_kg": 20            # kg CO2 / year/tree
-    },
-    "monterey_pine": {
-        "planting_cost": 300,
-        "annual_maintenance_cost": 40,
-        "annual_co2_kg": 25
-    },
-    "redwood": {
-        "planting_cost": 400,
-        "annual_maintenance_cost": 60,
-        "annual_co2_kg": 30
-    },
-    "california_buckeye": {
-        "planting_cost": 250,
-        "annual_maintenance_cost": 35,
-        "annual_co2_kg": 15
-    },
-    "western_sycamore": {
-        "planting_cost": 320,
-        "annual_maintenance_cost": 45,
-        "annual_co2_kg": 18
-    },
-    "london_plane": {
-        "planting_cost": 280,
-        "annual_maintenance_cost": 40,
-        "annual_co2_kg": 20
-    }
-}
+from schemas.species import SPECIES_DATA
 
 
 def plan_asphalt_conversion(
     asphalt_sqft: float,
     species_distribution: dict,
-    species_data: dict = species_data_california,
+    species_data: dict = SPECIES_DATA,
     spacing_sqft_per_tree: float = 100.0,
     cost_removal_per_sqft: float = 10.0,
     maintenance_years: int = 5
@@ -90,13 +59,13 @@ def plan_asphalt_conversion(
         species_trees = int(total_tree_capacity * fraction)
 
         # Maintenance cost for the entire period
-        annual_maint_cost = species_data[species]["annual_maintenance_cost"]
+        annual_maint_cost = species_data[species]["maintenance_cost"]
         maintenance_cost_species = species_trees * annual_maint_cost * maintenance_years
 
         # CO2 reduction over the entire period (simple multiplication approach)
-        # If each tree sequesters 'annual_co2_kg' per year,
-        # total is (annual_co2_kg * years * number_of_trees).
-        co2_annual = species_data[species]["annual_co2_kg"]
+        # If each tree sequesters 'co2_per_year' per year,
+        # total is (co2_per_year * years * number_of_trees).
+        co2_annual = species_data[species]["co2_per_year"]
         co2_reduction_species = co2_annual * maintenance_years * species_trees
 
         # Accumulate

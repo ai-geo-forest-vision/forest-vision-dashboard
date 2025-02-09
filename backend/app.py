@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from scripts.tree_generation import (AreaType, Rectangle, Tree,
                                      generate_trees_for_rectangles)
 from services.getAsphaultConversionResults import plan_asphalt_conversion
-from types.species import Species, SPECIES_DATA
+from schemas.species import Species, SPECIES_DATA
 
 
 class TreeQueryParams(BaseModel):
