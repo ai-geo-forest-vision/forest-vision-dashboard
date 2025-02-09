@@ -25,7 +25,7 @@ class SpeciesData(TypedDict):
 SPECIES_DATA: Dict[str, SpeciesData] = {
     Species.COAST_LIVE_OAK: {
         "planting_cost": 350,
-        "maintenance_cost": 50,
+        "maintenance_cost": 5,
         "co2_per_year": 20,
         "water_requirement": 800,
         "growth_rate": 1.5,
@@ -34,7 +34,7 @@ SPECIES_DATA: Dict[str, SpeciesData] = {
     },
     Species.MONTEREY_PINE: {
         "planting_cost": 300,
-        "maintenance_cost": 40,
+        "maintenance_cost": 4,
         "co2_per_year": 25,
         "water_requirement": 600,
         "growth_rate": 2.0,
@@ -43,7 +43,7 @@ SPECIES_DATA: Dict[str, SpeciesData] = {
     },
     Species.REDWOOD: {
         "planting_cost": 400,
-        "maintenance_cost": 60,
+        "maintenance_cost": 6,
         "co2_per_year": 30,
         "water_requirement": 1000,
         "growth_rate": 3.0,
@@ -52,7 +52,7 @@ SPECIES_DATA: Dict[str, SpeciesData] = {
     },
     Species.CALIFORNIA_BUCKEYE: {
         "planting_cost": 250,
-        "maintenance_cost": 35,
+        "maintenance_cost": 3.5,
         "co2_per_year": 15,
         "water_requirement": 400,
         "growth_rate": 1.0,
@@ -61,7 +61,7 @@ SPECIES_DATA: Dict[str, SpeciesData] = {
     },
     Species.WESTERN_SYCAMORE: {
         "planting_cost": 320,
-        "maintenance_cost": 45,
+        "maintenance_cost": 4.5,
         "co2_per_year": 18,
         "water_requirement": 700,
         "growth_rate": 1.8,
@@ -70,7 +70,7 @@ SPECIES_DATA: Dict[str, SpeciesData] = {
     },
     Species.LONDON_PLANE: {
         "planting_cost": 280,
-        "maintenance_cost": 40,
+        "maintenance_cost": 4,
         "co2_per_year": 20,
         "water_requirement": 600,
         "growth_rate": 1.5,
