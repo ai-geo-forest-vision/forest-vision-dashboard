@@ -164,16 +164,20 @@ export const MapView = ({ treeDensity, landPercentage }: MapViewProps) => {
         <div
           style={{
             position: 'absolute',
-            zIndex: 1,
-            pointerEvents: 'none',
+            bottom: 20,
+            left: 20,
             backgroundColor: 'rgba(0, 0, 0, 0.8)',
             color: 'white',
-            padding: '8px',
+            padding: '12px',
             borderRadius: '4px',
             fontSize: '12px',
             maxWidth: '300px',
+            zIndex: 1000,
           }}
         >
+          <div style={{ marginBottom: '8px', borderBottom: '1px solid rgba(255, 255, 255, 0.2)', paddingBottom: '4px' }}>
+            Trees loaded: {treeCount}
+          </div>
           <div style={{ fontWeight: 'bold', marginBottom: '4px' }}>
             {hoveredFeature.properties.name}
           </div>
@@ -202,7 +206,7 @@ export const MapView = ({ treeDensity, landPercentage }: MapViewProps) => {
         >
           Loading trees...
         </div>
-      ) : (
+      ) : !hoveredFeature && (
         <div
           style={{
             position: 'absolute',
