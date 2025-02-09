@@ -18,6 +18,8 @@ const theme = createTheme({
 
 function App() {
   const [asphaltArea, setAsphaltArea] = useState<number>(1000);
+  const [treeDensity, setTreeDensity] = useState<number>(0.01);
+  const [landPercentage, setLandPercentage] = useState<number>(1.0);
   const [speciesDistribution, setSpeciesDistribution] = useState<Record<Species, number>>({
     coast_live_oak: 0.4,
     monterey_pine: 0.3,
@@ -44,10 +46,15 @@ function App() {
             position: 'relative',
           }}
         >
-          <MapView />
+          <MapView 
+            treeDensity={treeDensity}
+            landPercentage={landPercentage}
+          />
           <ControlPanel 
             onAsphaltAreaChange={setAsphaltArea}
             onSpeciesDistributionChange={setSpeciesDistribution}
+            onTreeDensityChange={setTreeDensity}
+            onLandPercentageChange={setLandPercentage}
           />
         </Box>
       </Box>

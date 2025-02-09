@@ -1,17 +1,24 @@
-import { Box, Paper, Slider, Typography } from '@mui/material';
+import { Box, Paper, Slider, Typography, Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useState, useEffect } from 'react';
 import { Species, CALIFORNIA_SPECIES } from '../../types';
 
 interface ControlPanelProps {
   onAsphaltAreaChange: (area: number) => void;
   onSpeciesDistributionChange: (distribution: Record<Species, number>) => void;
+  onTreeDensityChange?: (density: number) => void;
+  onLandPercentageChange?: (percentage: number) => void;
 }
 
 export const ControlPanel = ({
   onAsphaltAreaChange,
-  onSpeciesDistributionChange
+  onSpeciesDistributionChange,
+  onTreeDensityChange,
+  onLandPercentageChange
 }: ControlPanelProps) => {
   const [asphaltArea, setAsphaltArea] = useState<number>(1000);
+  const [treeDensity, setTreeDensity] = useState<number>(0.01); // trees per square meter
+  const [landPercentage, setLandPercentage] = useState<number>(100); // percentage of available land
   // Store percentages internally (0-100)
   const [speciesDistribution, setSpeciesDistribution] = useState<Record<Species, number>>({
     coast_live_oak: 40,
@@ -119,6 +126,16 @@ export const ControlPanel = ({
   // Calculate total percentage
   const totalPercentage = Object.values(speciesDistribution).reduce((sum, val) => sum + val, 0);
 
+  const handleTreeDensityChange = (newValue: number) => {
+    setTreeDensity(newValue);
+    onTreeDensityChange?.(newValue);
+  };
+
+  const handleLandPercentageChange = (newValue: number) => {
+    setLandPercentage(newValue);
+    onLandPercentageChange?.(newValue / 100); // Convert to decimal for the API
+  };
+
   return (
     <Paper
       elevation={3}
@@ -134,8 +151,50 @@ export const ControlPanel = ({
       }}
     >
       <Typography variant="h6" gutterBottom>
-        Species Distribution
+        Tree Generation Settings
       </Typography>
+
+      <Box sx={{ mt: 4 }}>
+        <Typography gutterBottom>Tree Density (trees/m²)</Typography>
+        <Slider
+          value={treeDensity}
+          onChange={(_, newValue) => handleTreeDensityChange(newValue as number)}
+          min={0.001}
+          max={0.1}
+          step={0.001}
+          valueLabelDisplay="auto"
+          valueLabelFormat={(value) => value.toFixed(3)}
+          marks={[
+            { value: 0.001, label: '0.001' },
+            { value: 0.05, label: '0.05' },
+            { value: 0.1, label: '0.1' }
+          ]}
+        />
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1, color: 'rgba(255, 255, 255, 0.7)' }}>
+          {treeDensity.toFixed(3)} trees/m²
+        </Typography>
+      </Box>
+
+      <Box sx={{ mt: 4 }}>
+        <Typography gutterBottom>Available Land Usage</Typography>
+        <Slider
+          value={landPercentage}
+          onChange={(_, newValue) => handleLandPercentageChange(newValue as number)}
+          min={1}
+          max={100}
+          step={1}
+          valueLabelDisplay="auto"
+          valueLabelFormat={(value) => `${value}%`}
+          marks={[
+            { value: 1, label: '1%' },
+            { value: 50, label: '50%' },
+            { value: 100, label: '100%' }
+          ]}
+        />
+        <Typography variant="body2" color="text.secondary" sx={{ mt: 1, color: 'rgba(255, 255, 255, 0.7)' }}>
+          Using {landPercentage}% of available land
+        </Typography>
+      </Box>
 
       <Box sx={{ mt: 4 }}>
         <Typography gutterBottom>Asphalt Area to Convert</Typography>
@@ -161,28 +220,53 @@ export const ControlPanel = ({
         </Typography>
       </Box>
 
-      <Box sx={{ mt: 4 }}>
-        <Typography gutterBottom>Species Distribution</Typography>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Total: {totalPercentage}%
-        </Typography>
-        {Object.entries(CALIFORNIA_SPECIES).map(([key, name]) => (
-          <Box key={key} sx={{ mt: 2 }}>
-            <Typography variant="body2">
-              {name} ({speciesDistribution[key as Species]}%)
+      <Accordion 
+        sx={{ 
+          mt: 4, 
+          backgroundColor: 'rgba(255, 255, 255, 0.05)',
+          color: 'white',
+          '&:before': {
+            display: 'none',
+          },
+          '& .MuiAccordionSummary-root': {
+            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+          },
+          '& .MuiAccordionSummary-expandIconWrapper': {
+            color: 'white',
+          },
+        }}
+      >
+        <AccordionSummary
+          expandIcon={<ExpandMoreIcon />}
+          aria-controls="species-distribution-content"
+          id="species-distribution-header"
+        >
+          <Box>
+            <Typography variant="subtitle1">Species Distribution</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+              Total: {totalPercentage}%
             </Typography>
-            <Slider
-              value={speciesDistribution[key as Species]}
-              onChange={(_, newValue) => handleSpeciesChange(key as Species, newValue as number)}
-              min={0}
-              max={100}
-              step={1}
-              valueLabelDisplay="auto"
-              valueLabelFormat={(value) => `${value}%`}
-            />
           </Box>
-        ))}
-      </Box>
+        </AccordionSummary>
+        <AccordionDetails>
+          {Object.entries(CALIFORNIA_SPECIES).map(([key, name]) => (
+            <Box key={key} sx={{ mt: 2 }}>
+              <Typography variant="body2">
+                {name} ({speciesDistribution[key as Species]}%)
+              </Typography>
+              <Slider
+                value={speciesDistribution[key as Species]}
+                onChange={(_, newValue) => handleSpeciesChange(key as Species, newValue as number)}
+                min={0}
+                max={100}
+                step={1}
+                valueLabelDisplay="auto"
+                valueLabelFormat={(value) => `${value}%`}
+              />
+            </Box>
+          ))}
+        </AccordionDetails>
+      </Accordion>
 
       {conversionResults && (
         <Box sx={{ mt: 4 }}>

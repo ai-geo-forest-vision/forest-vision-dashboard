@@ -31,7 +31,12 @@ const INITIAL_VIEW_STATE: ViewState = {
   height: window.innerHeight
 };
 
-export const MapView = () => {
+interface MapViewProps {
+  treeDensity: number;
+  landPercentage: number;
+}
+
+export const MapView = ({ treeDensity, landPercentage }: MapViewProps) => {
   const mapRef = useRef<MapRef>(null);
   const deckRef = useRef(null);
   const resizeTimeoutRef = useRef<number | null>(null);
@@ -86,7 +91,7 @@ export const MapView = () => {
     const loadTrees = async () => {
       setIsLoading(true);
       try {
-        const treeData = await fetchTrees(1.0, 0.01); // Use fixed values for now
+        const treeData = await fetchTrees(landPercentage, treeDensity);
         console.log('Loaded trees:', treeData.length);
         setTrees(treeData);
         setTreeCount(treeData.length);
@@ -98,7 +103,7 @@ export const MapView = () => {
     };
 
     loadTrees();
-  }, []); // Only load once on mount
+  }, [treeDensity, landPercentage]); // Reload when parameters change
 
   const onHover = (info: PickingInfo) => {
     setHoveredFeature(info.object as Feature<Point, TreeProperties> | null);
