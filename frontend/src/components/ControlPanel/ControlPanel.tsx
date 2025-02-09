@@ -3,6 +3,23 @@ import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import { useState, useEffect } from 'react';
 import { Species, CALIFORNIA_SPECIES } from '../../types';
 
+// Custom hook for debouncing values
+function useDebounce<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
 interface ControlPanelProps {
   onAsphaltAreaChange: (area: number) => void;
   onSpeciesDistributionChange: (distribution: Record<Species, number>) => void;
@@ -16,6 +33,7 @@ export const ControlPanel = ({
   onTreeDensityChange,
   onLandPercentageChange
 }: ControlPanelProps) => {
+  // Internal state for immediate UI updates
   const [treeDensity, setTreeDensity] = useState<number>(0.01); // trees per square meter
   const [landPercentage, setLandPercentage] = useState<number>(100); // percentage of available land
   const [speciesDistribution, setSpeciesDistribution] = useState<Record<Species, number>>({
@@ -27,8 +45,21 @@ export const ControlPanel = ({
     london_plane: 0
   });
 
+  // Debounced values
+  const debouncedTreeDensity = useDebounce(treeDensity, 500);
+  const debouncedLandPercentage = useDebounce(landPercentage, 500);
+  const debouncedSpeciesDistribution = useDebounce(speciesDistribution, 500);
+
   const formatArea = (value: number) => {
     return `${value.toLocaleString()} sq ft`;
+  };
+
+  const handleTreeDensityChange = (newValue: number) => {
+    setTreeDensity(newValue);
+  };
+
+  const handleLandPercentageChange = (newValue: number) => {
+    setLandPercentage(newValue);
   };
 
   const handleSpeciesChange = (species: Species, newPercentage: number) => {
@@ -70,31 +101,32 @@ export const ControlPanel = ({
     }
 
     setSpeciesDistribution(newDistribution);
-    
-    // Convert percentages to decimals for the API
-    const decimalDistribution = Object.entries(newDistribution).reduce((acc, [key, value]) => {
-      acc[key as Species] = value / 100;
-      return acc;
-    }, {} as Record<Species, number>);
-    
-    onSpeciesDistributionChange(decimalDistribution);
   };
 
   // Calculate total percentage
   const totalPercentage = Object.values(speciesDistribution).reduce((sum, val) => sum + val, 0);
 
-  const handleTreeDensityChange = (newValue: number) => {
-    setTreeDensity(newValue);
-    onTreeDensityChange?.(newValue);
-  };
+  // Effect for tree density changes
+  useEffect(() => {
+    onTreeDensityChange?.(debouncedTreeDensity);
+  }, [debouncedTreeDensity]);
 
-  const handleLandPercentageChange = (newValue: number) => {
-    setLandPercentage(newValue);
-    onLandPercentageChange?.(newValue / 100); // Convert to decimal for the API
-    // Calculate area based on percentage of 206.7 million square feet
-    const totalArea = 20670000 * (newValue / 100);
+  // Effect for land percentage changes
+  useEffect(() => {
+    onLandPercentageChange?.(debouncedLandPercentage / 100);
+    const totalArea = 20670000 * (debouncedLandPercentage / 100);
     onAsphaltAreaChange(totalArea);
-  };
+  }, [debouncedLandPercentage]);
+
+  // Effect for species distribution changes
+  useEffect(() => {
+    const decimalDistribution = Object.entries(debouncedSpeciesDistribution).reduce((acc, [key, value]) => {
+      acc[key as Species] = value / 100;
+      return acc;
+    }, {} as Record<Species, number>);
+    
+    onSpeciesDistributionChange(decimalDistribution);
+  }, [debouncedSpeciesDistribution]);
 
   // Initial calculation of area when component mounts
   useEffect(() => {
