@@ -8,8 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from scripts.tree_generation import (AreaType, Rectangle, Tree,
                                      generate_trees_for_rectangles)
-from services.getAsphaultConversionResults import (plan_asphalt_conversion,
-                                                   species_data_california)
+from services.getAsphaultConversionResults import plan_asphalt_conversion
+from types.species import Species, SPECIES_DATA
 
 
 class TreeQueryParams(BaseModel):
@@ -23,7 +23,7 @@ class TreeQueryParams(BaseModel):
     )
     trees_per_square_meter: float = Field(
         default=1.0,
-        ge=0.0,
+        gt=0.0,
         description="Density of trees (trees per square meter)",
     )
 
@@ -45,7 +45,7 @@ class AsphaltConversionParams(BaseModel):
     asphalt_sqft: float = Field(
         gt=0.0, description="Total square feet of asphalt to remove"
     )
-    species_distribution: Dict[str, float] = Field(
+    species_distribution: Dict[Species, float] = Field(
         description="Distribution of tree species as {species_name: fraction}, must sum to 1.0"
     )
     spacing_sqft_per_tree: float = Field(
@@ -64,9 +64,9 @@ class AsphaltConversionParams(BaseModel):
                 {
                     "asphalt_sqft": 1000.0,
                     "species_distribution": {
-                        "coast_live_oak": 0.5,
-                        "monterey_pine": 0.3,
-                        "redwood": 0.2,
+                        Species.COAST_LIVE_OAK: 0.5,
+                        Species.MONTEREY_PINE: 0.3,
+                        Species.REDWOOD: 0.2,
                     },
                     "spacing_sqft_per_tree": 100.0,
                     "cost_removal_per_sqft": 10.0,
@@ -180,7 +180,6 @@ async def calculate_asphalt_conversion(params: AsphaltConversionParams):
     return plan_asphalt_conversion(
         asphalt_sqft=params.asphalt_sqft,
         species_distribution=params.species_distribution,
-        species_data=species_data_california,
         spacing_sqft_per_tree=params.spacing_sqft_per_tree,
         cost_removal_per_sqft=params.cost_removal_per_sqft,
         maintenance_years=params.maintenance_years,

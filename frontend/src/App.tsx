@@ -2,6 +2,7 @@ import { MapView } from './components/Map/Map';
 import { ControlPanel } from './components/ControlPanel';
 import { Box, CssBaseline, ThemeProvider, createTheme } from '@mui/material';
 import { useState } from 'react';
+import { Species } from './types';
 
 const theme = createTheme({
   palette: {
@@ -16,8 +17,15 @@ const theme = createTheme({
 });
 
 function App() {
-  const [selectedParkingType, setSelectedParkingType] = useState<string>('all');
-  const [treeDensity, setTreeDensity] = useState<number>(0); // Start with no trees
+  const [asphaltArea, setAsphaltArea] = useState<number>(1000);
+  const [speciesDistribution, setSpeciesDistribution] = useState<Record<Species, number>>({
+    coast_live_oak: 0.4,
+    monterey_pine: 0.3,
+    redwood: 0.3,
+    california_buckeye: 0,
+    western_sycamore: 0,
+    london_plane: 0
+  });
 
   return (
     <ThemeProvider theme={theme}>
@@ -36,15 +44,10 @@ function App() {
             position: 'relative',
           }}
         >
-          <MapView 
-            parkingType={selectedParkingType}
-            treeDensity={treeDensity}
-          />
+          <MapView />
           <ControlPanel 
-            selectedParkingType={selectedParkingType}
-            onParkingTypeChange={setSelectedParkingType}
-            treeDensity={treeDensity}
-            onTreeDensityChange={setTreeDensity}
+            onAsphaltAreaChange={setAsphaltArea}
+            onSpeciesDistributionChange={setSpeciesDistribution}
           />
         </Box>
       </Box>

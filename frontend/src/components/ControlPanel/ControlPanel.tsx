@@ -1,87 +1,123 @@
-import { Box, Paper, Slider, Typography, Select, MenuItem, FormControl, InputLabel } from '@mui/material';
+import { Box, Paper, Slider, Typography } from '@mui/material';
 import { useState, useEffect } from 'react';
-import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import TrendingDownIcon from '@mui/icons-material/TrendingDown';
-
-interface TreeType {
-  id: string;
-  name: string;
-  co2PerYear: number;
-  albedoImpact: number;
-}
-
-interface ParkingType {
-  id: string;
-  name: string;
-  description: string;
-}
-
-const TREE_TYPES: TreeType[] = [
-  { id: 'sequoia', name: 'Giant Sequoia', co2PerYear: 1000, albedoImpact: 0.35 },
-  { id: 'redwood', name: 'Coastal Redwood', co2PerYear: 900, albedoImpact: 0.32 },
-  { id: 'oak', name: 'Valley Oak', co2PerYear: 500, albedoImpact: 0.28 },
-  { id: 'eucalyptus', name: 'Blue Gum', co2PerYear: 600, albedoImpact: 0.30 },
-  { id: 'cypress', name: 'Monterey Cypress', co2PerYear: 400, albedoImpact: 0.25 },
-];
-
-const PARKING_TYPES: ParkingType[] = [
-  { id: 'surface', name: 'Surface Parking Lots', description: 'Ground-level parking areas' },
-  { id: 'garage', name: 'Parking Garages', description: 'Multi-level parking structures' },
-  { id: 'street', name: 'Street Parking', description: 'On-street parking spaces' },
-  { id: 'all', name: 'All Parking Types', description: 'All available parking spaces' },
-];
+import { Species, CALIFORNIA_SPECIES } from '../../types';
 
 interface ControlPanelProps {
-  selectedParkingType: string;
-  onParkingTypeChange: (parkingType: string) => void;
-  treeDensity: number;
-  onTreeDensityChange: (density: number) => void;
+  onAsphaltAreaChange: (area: number) => void;
+  onSpeciesDistributionChange: (distribution: Record<Species, number>) => void;
 }
 
-export const ControlPanel = ({ 
-  selectedParkingType, 
-  onParkingTypeChange,
-  treeDensity,
-  onTreeDensityChange
+export const ControlPanel = ({
+  onAsphaltAreaChange,
+  onSpeciesDistributionChange
 }: ControlPanelProps) => {
-  const [selectedTreeType, setSelectedTreeType] = useState<string>(TREE_TYPES[0].id);
-  const [previousCO2, setPreviousCO2] = useState<number>(0);
-  const [previousAlbedo, setPreviousAlbedo] = useState<number>(0);
+  const [asphaltArea, setAsphaltArea] = useState<number>(1000);
+  // Store percentages internally (0-100)
+  const [speciesDistribution, setSpeciesDistribution] = useState<Record<Species, number>>({
+    coast_live_oak: 40,
+    monterey_pine: 30,
+    redwood: 30,
+    california_buckeye: 0,
+    western_sycamore: 0,
+    london_plane: 0
+  });
+  const [conversionResults, setConversionResults] = useState<{
+    asphalt_removal_cost: number;
+    trees_planted_per_species: Record<Species, number>;
+    total_maintenance_cost: number;
+    total_co2_reduction_kg: number;
+  } | null>(null);
 
-  const formatDensity = (value: number) => {
-    return `${value.toFixed(3)} trees/m²`;
+  const formatArea = (value: number) => {
+    return `${value.toLocaleString()} sq ft`;
   };
 
-  const selectedTree = TREE_TYPES.find(tree => tree.id === selectedTreeType) || TREE_TYPES[0];
-  const selectedParking = PARKING_TYPES.find(type => type.id === selectedParkingType) || PARKING_TYPES[0];
-  const estimatedArea = 1000 * 10000; // Fixed 1000 hectares in square meters
-  const estimatedTrees = Math.floor(estimatedArea * treeDensity);
-  const totalCO2Offset = (estimatedTrees * selectedTree.co2PerYear) / 1000; // Convert to metric tons
-  const avgAlbedo = selectedTree.albedoImpact;
+  const handleSpeciesChange = (species: Species, newPercentage: number) => {
+    const newDistribution = { ...speciesDistribution };
+    newDistribution[species] = newPercentage;
 
-  // Calculate differences
-  const co2Difference = totalCO2Offset - previousCO2;
-  const albedoDifference = avgAlbedo - previousAlbedo;
+    // Get all other species and their current total
+    const otherSpecies = Object.keys(newDistribution).filter(s => s !== species) as Species[];
+    const remainingPercentage = Math.max(0, 100 - newPercentage);
+    const currentOtherSum = otherSpecies.reduce((sum, s) => sum + newDistribution[s], 0);
 
-  // Update previous values after a delay
+    if (currentOtherSum === 0) {
+      // If all other species are 0, distribute remaining percentage equally
+      const percentagePerSpecies = remainingPercentage / otherSpecies.length;
+      otherSpecies.forEach(s => {
+        newDistribution[s] = percentagePerSpecies;
+      });
+    } else {
+      // Distribute remaining percentage proportionally based on current ratios
+      const scaleFactor = remainingPercentage / currentOtherSum;
+      otherSpecies.forEach(s => {
+        newDistribution[s] = Math.round(newDistribution[s] * scaleFactor);
+      });
+    }
+
+    // Round values to whole numbers
+    Object.keys(newDistribution).forEach(key => {
+      newDistribution[key as Species] = Math.round(newDistribution[key as Species]);
+    });
+
+    // Ensure total is exactly 100
+    const total = Object.values(newDistribution).reduce((sum, val) => sum + val, 0);
+    if (total !== 100) {
+      const diff = 100 - total;
+      // Add/subtract the difference from the largest value
+      const largestKey = Object.entries(newDistribution)
+        .reduce((a, b) => a[1] > b[1] ? a : b)[0] as Species;
+      newDistribution[largestKey] += diff;
+    }
+
+    setSpeciesDistribution(newDistribution);
+    
+    // Convert percentages to decimals (0-1) for the backend
+    const decimalDistribution = Object.entries(newDistribution).reduce((acc, [key, value]) => {
+      acc[key as Species] = value / 100;
+      return acc;
+    }, {} as Record<Species, number>);
+    
+    onSpeciesDistributionChange(decimalDistribution);
+  };
+
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setPreviousCO2(totalCO2Offset);
-      setPreviousAlbedo(avgAlbedo);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, [totalCO2Offset, avgAlbedo]);
+    const fetchConversionResults = async () => {
+      try {
+        // Convert percentages to decimals for the API call
+        const decimalDistribution = Object.entries(speciesDistribution).reduce((acc, [key, value]) => {
+          acc[key as Species] = value / 100;
+          return acc;
+        }, {} as Record<Species, number>);
 
-  const DifferenceIndicator = ({ value, unit }: { value: number; unit: string }) => {
-    if (Math.abs(value) < 0.01) return null;
-    const color = value > 0 ? '#4CAF50' : '#ff4444';
-    return (
-      <Box sx={{ display: 'flex', alignItems: 'center', color, ml: 1, fontSize: '0.8rem' }}>
-        {value > 0 ? <TrendingUpIcon fontSize="small" /> : <TrendingDownIcon fontSize="small" />}
-        {value > 0 ? '+' : ''}{value.toFixed(1)}{unit}
-      </Box>
-    );
-  };
+        const response = await fetch('http://localhost:5003/asphalt-conversion/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            asphalt_sqft: asphaltArea,
+            species_distribution: decimalDistribution,
+            spacing_sqft_per_tree: 100.0,
+            cost_removal_per_sqft: 10.0,
+            maintenance_years: 5
+          })
+        });
+        
+        if (response.ok) {
+          const data = await response.json();
+          setConversionResults(data);
+        }
+      } catch (error) {
+        console.error('Error fetching conversion results:', error);
+      }
+    };
+
+    fetchConversionResults();
+  }, [asphaltArea, speciesDistribution]);
+
+  // Calculate total percentage
+  const totalPercentage = Object.values(speciesDistribution).reduce((sum, val) => sum + val, 0);
 
   return (
     <Paper
@@ -98,142 +134,101 @@ export const ControlPanel = ({
       }}
     >
       <Typography variant="h6" gutterBottom>
-        Forest Management
+        Species Distribution
       </Typography>
-      
+
       <Box sx={{ mt: 4 }}>
-        <Typography gutterBottom>Tree Density</Typography>
+        <Typography gutterBottom>Asphalt Area to Convert</Typography>
         <Slider
-          value={treeDensity}
-          onChange={(_, newValue) => onTreeDensityChange(newValue as number)}
-          min={0}
-          max={1.0}
-          step={0.05}
+          value={asphaltArea}
+          onChange={(_, newValue) => {
+            setAsphaltArea(newValue as number);
+            onAsphaltAreaChange(newValue as number);
+          }}
+          min={100}
+          max={10000}
+          step={100}
           valueLabelDisplay="auto"
-          valueLabelFormat={formatDensity}
+          valueLabelFormat={formatArea}
           marks={[
-            { value: 0, label: '0' },
-            { value: 0.5, label: '0.5' },
-            { value: 1.0, label: '1.0' }
+            { value: 100, label: '100' },
+            { value: 5000, label: '5k' },
+            { value: 10000, label: '10k' }
           ]}
         />
         <Typography variant="body2" color="text.secondary" sx={{ mt: 1, color: 'rgba(255, 255, 255, 0.7)' }}>
-          Density: {formatDensity(treeDensity)}
+          Area: {formatArea(asphaltArea)}
         </Typography>
       </Box>
 
       <Box sx={{ mt: 4 }}>
-        <FormControl fullWidth>
-          <InputLabel id="parking-type-label" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-            Parking Type
-          </InputLabel>
-          <Select
-            labelId="parking-type-label"
-            value={selectedParkingType}
-            label="Parking Type"
-            onChange={(e) => onParkingTypeChange(e.target.value)}
-            sx={{
-              color: 'white',
-              '.MuiOutlinedInput-notchedOutline': {
-                borderColor: 'rgba(255, 255, 255, 0.3)',
-              },
-              '&:hover .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'rgba(255, 255, 255, 0.5)',
-              },
-              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'primary.main',
-              },
-              '.MuiSvgIcon-root': {
-                color: 'rgba(255, 255, 255, 0.7)',
-              },
-            }}
-          >
-            {PARKING_TYPES.map((type) => (
-              <MenuItem key={type.id} value={type.id}>
-                {type.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Box>
-
-      <Box sx={{ mt: 4 }}>
-        <FormControl fullWidth>
-          <InputLabel id="tree-type-label" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-            Tree Type
-          </InputLabel>
-          <Select
-            labelId="tree-type-label"
-            value={selectedTreeType}
-            label="Tree Type"
-            onChange={(e) => setSelectedTreeType(e.target.value)}
-            sx={{
-              color: 'white',
-              '.MuiOutlinedInput-notchedOutline': {
-                borderColor: 'rgba(255, 255, 255, 0.3)',
-              },
-              '&:hover .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'rgba(255, 255, 255, 0.5)',
-              },
-              '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                borderColor: 'primary.main',
-              },
-              '.MuiSvgIcon-root': {
-                color: 'rgba(255, 255, 255, 0.7)',
-              },
-            }}
-          >
-            {TREE_TYPES.map((tree) => (
-              <MenuItem key={tree.id} value={tree.id}>
-                {tree.name}
-              </MenuItem>
-            ))}
-          </Select>
-        </FormControl>
-      </Box>
-
-      <Box sx={{ mt: 4 }}>
-        <Typography variant="h6" gutterBottom sx={{ fontSize: '1rem' }}>
-          Yearly Impact Indicators
+        <Typography gutterBottom>Species Distribution</Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+          Total: {totalPercentage}%
         </Typography>
-        
-        <Box sx={{ mt: 2, p: 2, bgcolor: 'rgba(255, 255, 255, 0.05)', borderRadius: 1 }}>
-          <Typography variant="body2" color="text.secondary" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-            CO₂ Offset
+        {Object.entries(CALIFORNIA_SPECIES).map(([key, name]) => (
+          <Box key={key} sx={{ mt: 2 }}>
+            <Typography variant="body2">
+              {name} ({speciesDistribution[key as Species]}%)
+            </Typography>
+            <Slider
+              value={speciesDistribution[key as Species]}
+              onChange={(_, newValue) => handleSpeciesChange(key as Species, newValue as number)}
+              min={0}
+              max={100}
+              step={1}
+              valueLabelDisplay="auto"
+              valueLabelFormat={(value) => `${value}%`}
+            />
+          </Box>
+        ))}
+      </Box>
+
+      {conversionResults && (
+        <Box sx={{ mt: 4 }}>
+          <Typography variant="h6" gutterBottom sx={{ fontSize: '1rem' }}>
+            Impact Metrics
           </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          
+          <Box sx={{ mt: 2, p: 2, bgcolor: 'rgba(255, 255, 255, 0.05)', borderRadius: 1 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+              Asphalt Removal Cost
+            </Typography>
             <Typography variant="h6" sx={{ color: '#4CAF50', mt: 1 }}>
-              {totalCO2Offset.toFixed(1)} metric tons
+              ${conversionResults.asphalt_removal_cost.toLocaleString()}
             </Typography>
-            <DifferenceIndicator value={co2Difference} unit=" mt" />
           </Box>
-        </Box>
 
-        <Box sx={{ mt: 2, p: 2, bgcolor: 'rgba(255, 255, 255, 0.05)', borderRadius: 1 }}>
-          <Typography variant="body2" color="text.secondary" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-            Average Albedo Impact
-          </Typography>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
+          <Box sx={{ mt: 2, p: 2, bgcolor: 'rgba(255, 255, 255, 0.05)', borderRadius: 1 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+              Total Maintenance Cost (5 years)
+            </Typography>
             <Typography variant="h6" sx={{ color: '#81C784', mt: 1 }}>
-              {(avgAlbedo * 100).toFixed(1)}%
+              ${conversionResults.total_maintenance_cost.toLocaleString()}
             </Typography>
-            <DifferenceIndicator value={albedoDifference * 100} unit="%" />
+          </Box>
+
+          <Box sx={{ mt: 2, p: 2, bgcolor: 'rgba(255, 255, 255, 0.05)', borderRadius: 1 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+              CO₂ Reduction (5 years)
+            </Typography>
+            <Typography variant="h6" sx={{ color: '#81C784', mt: 1 }}>
+              {conversionResults.total_co2_reduction_kg.toLocaleString()} kg
+            </Typography>
+          </Box>
+
+          <Box sx={{ mt: 2 }}>
+            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
+              Trees to be Planted:
+            </Typography>
+            {Object.entries(conversionResults.trees_planted_per_species).map(([species, count]) => (
+              <Typography key={species} variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
+                {CALIFORNIA_SPECIES[species as Species]}: {count}
+              </Typography>
+            ))}
           </Box>
         </Box>
-
-        <Box sx={{ mt: 2, p: 2, bgcolor: 'rgba(255, 255, 255, 0.05)', borderRadius: 1 }}>
-          <Typography variant="body2" color="text.secondary" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-            Area Coverage
-          </Typography>
-          <Typography variant="h6" sx={{ color: '#81C784', mt: 1 }}>
-            {estimatedArea.toLocaleString()} square meters
-          </Typography>
-        </Box>
-
-        <Typography variant="body2" sx={{ mt: 2, color: 'rgba(255, 255, 255, 0.5)', fontSize: '0.75rem' }}>
-          Estimated Trees: {estimatedTrees.toLocaleString()}
-        </Typography>
-      </Box>
+      )}
     </Paper>
   );
 }; 

@@ -6,7 +6,7 @@ import type { MapRef } from 'react-map-gl';
 import type { PickingInfo } from '@deck.gl/core';
 import type { Feature, Point } from 'geojson';
 import type { ViewState as MapViewState } from 'react-map-gl';
-import type { TreeProperties } from '../../services/mockData';
+import type { TreeProperties } from '../../types';
 import { fetchTrees } from '../../services/treeService';
 import { createLayers } from './layers';
 
@@ -31,12 +31,7 @@ const INITIAL_VIEW_STATE: ViewState = {
   height: window.innerHeight
 };
 
-interface MapViewProps {
-  parkingType: string;
-  treeDensity: number;
-}
-
-export const MapView = ({ parkingType, treeDensity }: MapViewProps) => {
+export const MapView = () => {
   const mapRef = useRef<MapRef>(null);
   const deckRef = useRef(null);
   const resizeTimeoutRef = useRef<number | null>(null);
@@ -91,7 +86,7 @@ export const MapView = ({ parkingType, treeDensity }: MapViewProps) => {
     const loadTrees = async () => {
       setIsLoading(true);
       try {
-        const treeData = await fetchTrees(1.0, treeDensity); // Use 1.0 for 100% coverage
+        const treeData = await fetchTrees(1.0, 0.01); // Use fixed values for now
         console.log('Loaded trees:', treeData.length);
         setTrees(treeData);
         setTreeCount(treeData.length);
@@ -103,7 +98,7 @@ export const MapView = ({ parkingType, treeDensity }: MapViewProps) => {
     };
 
     loadTrees();
-  }, [parkingType, treeDensity]); // Dependencies include parkingType and treeDensity
+  }, []); // Only load once on mount
 
   const onHover = (info: PickingInfo) => {
     setHoveredFeature(info.object as Feature<Point, TreeProperties> | null);
