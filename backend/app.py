@@ -23,7 +23,7 @@ class TreeQueryParams(BaseModel):
     )
     trees_per_square_meter: float = Field(
         default=1.0,
-        gt=0.0,
+        ge=0.0,
         description="Density of trees (trees per square meter)",
     )
 

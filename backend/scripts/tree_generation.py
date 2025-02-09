@@ -110,7 +110,7 @@ def _generate_tree_locations(
 
 
 def generate_trees_for_rectangles(
-    rectangles: List[Rectangle], trees_per_square_meter
+    rectangles: List[Rectangle], trees_per_square_meter: float
 ) -> List[Tree]:
     """
     Generate tree locations for multiple rectangles
@@ -119,10 +119,15 @@ def generate_trees_for_rectangles(
         rectangles: List of rectangles to populate with trees
         trees_per_square_meter: Density of trees (trees per square meter), defaults to 1.0
     """
+    # Early return if density is 0
+    if trees_per_square_meter == 0:
+        return []
+
     print(f"\nGenerating trees with density: {trees_per_square_meter} trees/m²")
     total_area = sum(rect.width_meters * rect.length_meters for rect in rectangles)
     expected_trees = round(total_area * trees_per_square_meter)
     print(f"Total area: {total_area}m², Expected trees: {expected_trees}")
+
     all_trees = []
     for rectangle in rectangles:
         trees = _generate_tree_locations(rectangle, trees_per_square_meter)
