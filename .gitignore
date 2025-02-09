@@ -212,3 +212,4 @@ cython_debug/
 .secrets
 .now*
 backend/node_modules
+*.mbtiles

@@ -1,6 +1,6 @@
 import { Box, Paper, Slider, Typography, Accordion, AccordionSummary, AccordionDetails } from '@mui/material';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Species, CALIFORNIA_SPECIES } from '../../types';
 
 interface ControlPanelProps {
@@ -19,7 +19,6 @@ export const ControlPanel = ({
   const [asphaltArea, setAsphaltArea] = useState<number>(1000);
   const [treeDensity, setTreeDensity] = useState<number>(0.01); // trees per square meter
   const [landPercentage, setLandPercentage] = useState<number>(100); // percentage of available land
-  // Store percentages internally (0-100)
   const [speciesDistribution, setSpeciesDistribution] = useState<Record<Species, number>>({
     coast_live_oak: 40,
     monterey_pine: 30,
@@ -28,12 +27,6 @@ export const ControlPanel = ({
     western_sycamore: 0,
     london_plane: 0
   });
-  const [conversionResults, setConversionResults] = useState<{
-    asphalt_removal_cost: number;
-    trees_planted_per_species: Record<Species, number>;
-    total_maintenance_cost: number;
-    total_co2_reduction_kg: number;
-  } | null>(null);
 
   const formatArea = (value: number) => {
     return `${value.toLocaleString()} sq ft`;
@@ -79,7 +72,7 @@ export const ControlPanel = ({
 
     setSpeciesDistribution(newDistribution);
     
-    // Convert percentages to decimals (0-1) for the backend
+    // Convert percentages to decimals for the API
     const decimalDistribution = Object.entries(newDistribution).reduce((acc, [key, value]) => {
       acc[key as Species] = value / 100;
       return acc;
@@ -87,41 +80,6 @@ export const ControlPanel = ({
     
     onSpeciesDistributionChange(decimalDistribution);
   };
-
-  useEffect(() => {
-    const fetchConversionResults = async () => {
-      try {
-        // Convert percentages to decimals for the API call
-        const decimalDistribution = Object.entries(speciesDistribution).reduce((acc, [key, value]) => {
-          acc[key as Species] = value / 100;
-          return acc;
-        }, {} as Record<Species, number>);
-
-        const response = await fetch('http://localhost:5003/asphalt-conversion/', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            asphalt_sqft: asphaltArea,
-            species_distribution: decimalDistribution,
-            spacing_sqft_per_tree: 100.0,
-            cost_removal_per_sqft: 10.0,
-            maintenance_years: 5
-          })
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          setConversionResults(data);
-        }
-      } catch (error) {
-        console.error('Error fetching conversion results:', error);
-      }
-    };
-
-    fetchConversionResults();
-  }, [asphaltArea, speciesDistribution]);
 
   // Calculate total percentage
   const totalPercentage = Object.values(speciesDistribution).reduce((sum, val) => sum + val, 0);
@@ -267,52 +225,6 @@ export const ControlPanel = ({
           ))}
         </AccordionDetails>
       </Accordion>
-
-      {conversionResults && (
-        <Box sx={{ mt: 4 }}>
-          <Typography variant="h6" gutterBottom sx={{ fontSize: '1rem' }}>
-            Impact Metrics
-          </Typography>
-          
-          <Box sx={{ mt: 2, p: 2, bgcolor: 'rgba(255, 255, 255, 0.05)', borderRadius: 1 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-              Asphalt Removal Cost
-            </Typography>
-            <Typography variant="h6" sx={{ color: '#4CAF50', mt: 1 }}>
-              ${conversionResults.asphalt_removal_cost.toLocaleString()}
-            </Typography>
-          </Box>
-
-          <Box sx={{ mt: 2, p: 2, bgcolor: 'rgba(255, 255, 255, 0.05)', borderRadius: 1 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-              Total Maintenance Cost (5 years)
-            </Typography>
-            <Typography variant="h6" sx={{ color: '#81C784', mt: 1 }}>
-              ${conversionResults.total_maintenance_cost.toLocaleString()}
-            </Typography>
-          </Box>
-
-          <Box sx={{ mt: 2, p: 2, bgcolor: 'rgba(255, 255, 255, 0.05)', borderRadius: 1 }}>
-            <Typography variant="body2" color="text.secondary" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-              CO₂ Reduction (5 years)
-            </Typography>
-            <Typography variant="h6" sx={{ color: '#81C784', mt: 1 }}>
-              {conversionResults.total_co2_reduction_kg.toLocaleString()} kg
-            </Typography>
-          </Box>
-
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.7)' }}>
-              Trees to be Planted:
-            </Typography>
-            {Object.entries(conversionResults.trees_planted_per_species).map(([species, count]) => (
-              <Typography key={species} variant="body2" sx={{ color: 'rgba(255, 255, 255, 0.5)' }}>
-                {CALIFORNIA_SPECIES[species as Species]}: {count}
-              </Typography>
-            ))}
-          </Box>
-        </Box>
-      )}
     </Paper>
   );
 }; 
